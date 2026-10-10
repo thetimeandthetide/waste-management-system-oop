@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Full Code Walkthrough - Waste Management System</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <aside class="sidebar">
+        <div class="brand">
+            <span class="brand-mark">C</span>
+            <div>
+                <strong>Code Guide</strong>
+                <small>Every file explained</small>
+            </div>
+        </div>
+        <nav>
+            <a href="index.html">Home</a>
+            <a href="#run">How To Run</a>
+            <a href="#swing-start">How Swing Opens</a>
+            <a href="#model">Model Files</a>
+            <a href="#dao">DAO Files</a>
+            <a href="#gui">GUI File</a>
+            <a href="#main">Main File</a>
+            <a href="#sql">SQL File</a>
+            <a href="#scripts">Build/Run Files</a>
+            <a href="#mysql">MySQL Check</a>
+        </nav>
+    </aside>
+
+    <main>
+        <section class="hero compact-hero">
+            <div>
+                <p class="eyebrow">Detailed Viva Preparation</p>
+                <h1>Full Code Walkthrough</h1>
+                <p class="hero-text">
+                    This page explains every important line, method, class, package, and file in the project
+                    in beginner-friendly language.
+                </p>
+                <div class="hero-actions">
+                    <a href="index.html" class="button primary">Back To Main Guide</a>
+                    <a href="#gui" class="button secondary">Jump To Swing GUI</a>
+                </div>
+            </div>
+        </section>
+
+        <section class="section" id="run">
+            <h2>How To Run The Project</h2>
+            <h3>1. Start MySQL</h3>
+            <pre><code>brew services start mysql</code></pre>
+            <p>This starts the MySQL server in the background. The Java app needs MySQL running before it can store or read data.</p>
+
+            <h3>2. Open The Project Folder</h3>
+            <pre><code>cd /Users/josephfidel/Desktop/WasteManagementSystem</code></pre>
+            <p>This moves Terminal into the project folder.</p>
+
+            <h3>3. Run The App</h3>
+            <pre><code>./run.sh</code></pre>
+            <p>This runs the packaged JAR file. The Swing desktop window opens.</p>
+
+            <h3>4. Rebuild If Code Changes</h3>
+            <pre><code>./build.sh</code></pre>
+            <p>This compiles the Java source files and recreates <code>dist/WasteManagementSystem.jar</code>.</p>
+        </section>
+
+        <section class="section" id="swing-start">
+            <h2>How Swing Is Opened And Used</h2>
+            <p>Swing does not open from HTML or a browser. It opens from Java code using a JFrame.</p>
+            <div class="walk-table">
+                <div><code>public static void main(String[] args)</code></div>
+                <p>This is the first method Java runs.</p>
+                <div><code>SwingUtilities.invokeLater(() -&gt; { ... })</code></div>
+                <p>This tells Java to start the GUI on Swing's Event Dispatch Thread. Swing components should be created on this thread.</p>
+                <div><code>DatabaseManager.initializeDatabase();</code></div>
+                <p>Before the window opens, the app creates/checks the database and table.</p>
+                <div><code>WasteManagementGUI gui = new WasteManagementGUI();</code></div>
+                <p>This creates the main GUI object. Since WasteManagementGUI extends JFrame, this object is the desktop window.</p>
+                <div><code>gui.setVisible(true);</code></div>
+                <p>This displays the JFrame on the screen. Without this line, the window exists in memory but is not visible.</p>
+            </div>
+            <h3>Important Swing Components Used</h3>
+            <div class="grid two">
+                <article class="card"><h3>JFrame</h3><p>The main window. Our class extends JFrame.</p></article>
+                <article class="card"><h3>JPanel</h3><p>A container used to arrange labels, inputs, buttons, and table areas.</p></article>
+                <article class="card"><h3>JTextField</h3><p>Input box for description, quantity, location, search, and ID display.</p></article>
+                <article class="card"><h3>JComboBox</h3><p>Dropdown for waste type and status.</p></article>
+                <article class="card"><h3>JTable</h3><p>Displays records from MySQL in rows and columns.</p></article>
+                <article class="card"><h3>JButton</h3><p>Clickable buttons connected to event listeners.</p></article>
+            </div>
+        </section>
+
+        <section class="section" id="model">
+            <h2>Model Package Code</h2>
+            <p>The model package contains the OOP part of the project.</p>
+
+            <details open>
+                <summary>Waste.java</summary>
+                <div class="walk-table">
+                    <div><code>package model;</code></div><p>Places this class inside the model package.</p>
+                    <div><code>public abstract class Waste</code></div><p>Defines an abstract parent class. Abstract means we cannot directly create a plain Waste object.</p>
+                    <div><code>private int id;</code></div><p>Stores the database ID. It is private to show encapsulation.</p>
+                    <div><code>private String description;</code></div><p>Stores the description entered by the user.</p>
+                    <div><code>private double quantity;</code></div><p>Stores quantity in kilograms. double allows decimal values like 12.5.</p>
+                    <div><code>private String location;</code></div><p>Stores where the waste is located.</p>
+                    <div><code>private String status;</code></div><p>Stores Pending or Collected.</p>
+                    <div><code>public Waste() { }</code></div><p>Default constructor. It allows creating an empty object if needed.</p>
+                    <div><code>public Waste(int id, String description, double quantity, String location, String status)</code></div><p>Parameterized constructor. It fills all common fields at object creation time.</p>
+                    <div><code>this.id = id;</code></div><p>Assigns the constructor id value to the object's id field.</p>
+                    <div><code>public abstract String getWasteCategory();</code></div><p>Abstract method. Child classes must override it. This is abstraction and supports polymorphism.</p>
+                    <div><code>getId(), setId()</code></div><p>Getter returns ID. Setter updates ID. This demonstrates controlled access to private data.</p>
+                    <div><code>getDescription(), setDescription()</code></div><p>Getter and setter for description.</p>
+                    <div><code>getQuantity(), setQuantity()</code></div><p>Getter and setter for quantity.</p>
+                    <div><code>getLocation(), setLocation()</code></div><p>Getter and setter for location.</p>
+                    <div><code>getStatus(), setStatus()</code></div><p>Getter and setter for status.</p>
+                </div>
+            </details>
+
+            <details>
+                <summary>OrganicWaste.java</summary>
+                <div class="walk-table">
+                    <div><code>package model;</code></div><p>Places the class in the model package.</p>
+                    <div><code>public class OrganicWaste extends Waste</code></div><p>Creates a child class. extends means it inherits from Waste.</p>
+                    <div><code>public OrganicWaste() { }</code></div><p>Default constructor.</p>
+                    <div><code>super(id, description, quantity, location, status);</code></div><p>Calls the parent Waste constructor to set common fields.</p>
+                    <div><code>@Override</code></div><p>Shows that the child class is replacing the abstract parent method.</p>
+                    <div><code>return "Organic";</code></div><p>Returns this waste category. This is polymorphism.</p>
+                </div>
+            </details>
+
+            <details>
+                <summary>RecyclableWaste.java</summary>
+                <div class="walk-table">
+                    <div><code>public class RecyclableWaste extends Waste</code></div><p>Defines a child class for recyclable waste.</p>
+                    <div><code>super(id, description, quantity, location, status);</code></div><p>Reuses parent constructor code.</p>
+                    <div><code>getWasteCategory()</code></div><p>Overrides the parent abstract method.</p>
+                    <div><code>return "Recyclable";</code></div><p>Stores this object as Recyclable in MySQL and the table.</p>
+                </div>
+            </details>
+
+            <details>
+                <summary>HazardousWaste.java</summary>
+                <div class="walk-table">
+                    <div><code>public class HazardousWaste extends Waste</code></div><p>Defines a child class for hazardous waste.</p>
+                    <div><code>super(...)</code></div><p>Sends the common field values to the parent Waste class.</p>
+                    <div><code>return "Hazardous";</code></div><p>Returns the category Hazardous.</p>
+                </div>
+            </details>
+        </section>
+
+        <section class="section" id="dao">
+            <h2>DAO Package Code</h2>
+            <p>DAO means Data Access Object. These classes handle database work.</p>
+
+            <details open>
+                <summary>DatabaseManager.java</summary>
+                <div class="walk-table">
+                    <div><code>package dao;</code></div><p>Places this class in the dao package.</p>
+                    <div><code>import java.sql.Connection;</code></div><p>Connection represents an active connection to MySQL.</p>
+                    <div><code>import java.sql.DriverManager;</code></div><p>DriverManager creates the database connection using the JDBC URL.</p>
+                    <div><code>import java.sql.PreparedStatement;</code></div><p>PreparedStatement runs SQL with safe placeholders.</p>
+                    <div><code>import java.sql.ResultSet;</code></div><p>ResultSet holds data returned from SELECT queries.</p>
+                    <div><code>import java.sql.SQLException;</code></div><p>SQLException handles database-related errors.</p>
+                    <div><code>import java.sql.Statement;</code></div><p>Statement runs simple SQL commands.</p>
+                    <div><code>SERVER_URL = "jdbc:mysql://localhost:3306/";</code></div><p>Base address of MySQL running on your computer.</p>
+                    <div><code>DATABASE_NAME = "waste_management_db";</code></div><p>Name of the database used by the project.</p>
+                    <div><code>DATABASE_URL = SERVER_URL + DATABASE_NAME;</code></div><p>Full JDBC URL used after the database exists.</p>
+                    <div><code>USERNAME = "root"; PASSWORD = "";</code></div><p>MySQL login details. Empty password means no password is set for root locally.</p>
+                    <div><code>getConnection()</code></div><p>Returns a reusable connection to the project database.</p>
+                    <div><code>DriverManager.getConnection(...)</code></div><p>Actually opens the MySQL connection using the Connector/J driver.</p>
+                    <div><code>initializeDatabase()</code></div><p>Runs startup setup: create database, create table, insert starter rows.</p>
+                    <div><code>createDatabaseIfNeeded()</code></div><p>Creates the database only if it does not already exist.</p>
+                    <div><code>try (Connection connection = ...)</code></div><p>try-with-resources automatically closes the connection after use.</p>
+                    <div><code>CREATE DATABASE IF NOT EXISTS</code></div><p>SQL command that prevents duplicate database errors.</p>
+                    <div><code>createWasteTableIfNeeded()</code></div><p>Creates the waste table with id, waste_type, description, quantity, location, status.</p>
+                    <div><code>insertStarterRecordsIfEmpty()</code></div><p>Checks the table count. If empty, inserts three starter records.</p>
+                    <div><code>SELECT COUNT(*) FROM waste</code></div><p>Counts how many rows are already in the table.</p>
+                    <div><code>insertStarterRecord(...)</code></div><p>Helper method to insert one starter row.</p>
+                    <div><code>statement.setString(...)</code></div><p>Fills a ? placeholder in the SQL query.</p>
+                    <div><code>statement.executeUpdate()</code></div><p>Runs INSERT, UPDATE, DELETE, CREATE commands.</p>
+                </div>
+            </details>
+
+            <details>
+                <summary>WasteManager.java</summary>
+                <div class="walk-table">
+                    <div><code>package dao;</code></div><p>Places CRUD code in the dao package.</p>
+                    <div><code>import model.HazardousWaste; OrganicWaste; RecyclableWaste; Waste;</code></div><p>Imports model classes so database rows can become Java objects.</p>
+                    <div><code>import java.util.ArrayList; import java.util.List;</code></div><p>Used to store multiple waste objects.</p>
+                    <div><code>public void addWaste(Waste waste)</code></div><p>Receives any Waste child object and inserts it into MySQL.</p>
+                    <div><code>INSERT INTO waste (...)</code></div><p>SQL command used to add a new row.</p>
+                    <div><code>VALUES (?, ?, ?, ?, ?)</code></div><p>Question marks are placeholders filled by PreparedStatement.</p>
+                    <div><code>waste.getWasteCategory()</code></div><p>Polymorphism: returns Organic, Recyclable, or Hazardous depending on the object.</p>
+                    <div><code>waste.getDescription(), getQuantity(), getLocation(), getStatus()</code></div><p>Gets values from private fields using getters.</p>
+                    <div><code>public List&lt;Waste&gt; getAllWaste()</code></div><p>Reads all records and returns them as a list.</p>
+                    <div><code>SELECT * FROM waste ORDER BY id</code></div><p>SQL command to fetch all records sorted by ID.</p>
+                    <div><code>while (resultSet.next())</code></div><p>Moves row by row through the database result.</p>
+                    <div><code>createWasteFromResultSet(resultSet)</code></div><p>Converts each row into the correct Java object.</p>
+                    <div><code>searchWaste(String keyword)</code></div><p>Searches rows using a word typed by the user.</p>
+                    <div><code>LIKE ?</code></div><p>SQL pattern matching. It finds partial matches.</p>
+                    <div><code>"%" + keyword + "%"</code></div><p>Means search for keyword anywhere inside the field.</p>
+                    <div><code>updateWaste(Waste waste)</code></div><p>Updates existing row values using the selected ID.</p>
+                    <div><code>WHERE id = ?</code></div><p>Makes sure only the selected row is updated.</p>
+                    <div><code>deleteWaste(int id)</code></div><p>Deletes one row using its ID.</p>
+                    <div><code>markAsCollected(int id)</code></div><p>Updates only status to Collected.</p>
+                    <div><code>resultSet.getInt("id")</code></div><p>Reads the id column from MySQL.</p>
+                    <div><code>resultSet.getString("waste_type")</code></div><p>Reads the waste type column.</p>
+                    <div><code>if ("Organic".equalsIgnoreCase(wasteType))</code></div><p>Chooses which child object to create from the database value.</p>
+                    <div><code>return new OrganicWaste(...)</code></div><p>Creates an OrganicWaste object from a database row.</p>
+                    <div><code>else return new HazardousWaste(...)</code></div><p>If not Organic or Recyclable, it creates a HazardousWaste object.</p>
+                </div>
+            </details>
+        </section>
+
+        <section class="section" id="gui">
+            <h2>GUI File: WasteManagementGUI.java</h2>
+            <p>This is the largest file. It creates the full Swing interface and connects GUI actions to database methods.</p>
+
+            <details open>
+                <summary>Imports And Class Fields</summary>
+                <div class="walk-table">
+                    <div><code>package gui;</code></div><p>Places this class inside the gui package.</p>
+                    <div><code>import dao.WasteManager;</code></div><p>Allows the GUI to call CRUD database methods.</p>
+                    <div><code>import model.* classes</code></div><p>Allows the GUI to create OrganicWaste, RecyclableWaste, HazardousWaste objects.</p>
+                    <div><code>javax.swing imports</code></div><p>Imports Swing components like JFrame, JButton, JTable, JTextField, JPanel.</p>
+                    <div><code>java.awt imports</code></div><p>Imports layout, color, font, graphics, and event classes for styling.</p>
+                    <div><code>public class WasteManagementGUI extends JFrame</code></div><p>Makes this class a desktop window.</p>
+                    <div><code>private static final Color ...</code></div><p>Defines reusable colors for the aesthetic interface.</p>
+                    <div><code>private final WasteManager wasteManager;</code></div><p>GUI uses this object to talk to the database layer.</p>
+                    <div><code>private JTextField descriptionField;</code></div><p>Text box where user enters description.</p>
+                    <div><code>private JComboBox&lt;String&gt; typeComboBox;</code></div><p>Dropdown for Organic/Recyclable/Hazardous.</p>
+                    <div><code>private JTable wasteTable;</code></div><p>Table for showing MySQL records.</p>
+                    <div><code>private DefaultTableModel tableModel;</code></div><p>Stores row/column data shown inside JTable.</p>
+                </div>
+            </details>
+
+            <details>
+                <summary>Constructor: Opening The Window</summary>
+                <div class="walk-table">
+                    <div><code>wasteManager = new WasteManager();</code></div><p>Creates the object that handles database operations.</p>
+                    <div><code>setModernLookAndFeel();</code></div><p>Uses the operating system look and feel where possible.</p>
+                    <div><code>setTitle(...)</code></div><p>Sets the window title.</p>
+                    <div><code>setSize(1040, 680)</code></div><p>Sets the starting window size.</p>
+                    <div><code>setMinimumSize(...)</code></div><p>Prevents the window from becoming too small and breaking the layout.</p>
+                    <div><code>setLocationRelativeTo(null)</code></div><p>Centers the window on screen.</p>
+                    <div><code>setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE)</code></div><p>Closes the Java program when the window is closed.</p>
+                    <div><code>JPanel mainPanel = new GradientPanel();</code></div><p>Creates the main background panel with custom gradient painting.</p>
+                    <div><code>mainPanel.setLayout(new BorderLayout(...))</code></div><p>Uses BorderLayout to place header at top, content center, buttons bottom.</p>
+                    <div><code>setContentPane(mainPanel)</code></div><p>Makes mainPanel the root container of the JFrame.</p>
+                    <div><code>mainPanel.add(createHeaderPanel(), BorderLayout.NORTH)</code></div><p>Adds title/header area to top.</p>
+                    <div><code>mainPanel.add(createCenterPanel(), BorderLayout.CENTER)</code></div><p>Adds form and table to center.</p>
+                    <div><code>mainPanel.add(createButtonPanel(), BorderLayout.SOUTH)</code></div><p>Adds action buttons at bottom.</p>
+                    <div><code>loadAllWaste();</code></div><p>Loads records from MySQL immediately when the window opens.</p>
+                </div>
+            </details>
+
+            <details>
+                <summary>Panels And Inputs</summary>
+                <div class="walk-table">
+                    <div><code>createHeaderPanel()</code></div><p>Builds the title section at the top of the app.</p>
+                    <div><code>new HeaderPanel()</code></div><p>Uses custom panel class that paints a rounded gradient header.</p>
+                    <div><code>new JLabel("Waste Management System")</code></div><p>Creates visible title text.</p>
+                    <div><code>titleLabel.setFont(...)</code></div><p>Changes title size and style.</p>
+                    <div><code>headerPanel.add(...)</code></div><p>Adds title/subtitle labels into the header.</p>
+                    <div><code>createCenterPanel()</code></div><p>Creates the middle area of the window.</p>
+                    <div><code>createFormPanel()</code></div><p>Creates all input fields.</p>
+                    <div><code>new GridLayout(3, 4, 14, 10)</code></div><p>Arranges form components in 3 rows and 4 columns.</p>
+                    <div><code>idField.setEditable(false)</code></div><p>ID cannot be typed because MySQL auto-generates it.</p>
+                    <div><code>new JComboBox&lt;&gt;(new String[]{"Organic", ...})</code></div><p>Creates dropdown options.</p>
+                    <div><code>styleInput(...)</code></div><p>Applies consistent styling to text fields.</p>
+                    <div><code>formPanel.add(label("Description"))</code></div><p>Adds a label to the form.</p>
+                    <div><code>formPanel.add(descriptionField)</code></div><p>Adds the input box beside its label.</p>
+                </div>
+            </details>
+
+            <details>
+                <summary>Table And Selection</summary>
+                <div class="walk-table">
+                    <div><code>String[] columns = {...}</code></div><p>Defines table column names.</p>
+                    <div><code>new DefaultTableModel(columns, 0)</code></div><p>Creates an empty table model with those columns.</p>
+                    <div><code>isCellEditable(...){ return false; }</code></div><p>Prevents typing directly inside the table. Editing should happen through the form.</p>
+                    <div><code>wasteTable = new JTable(tableModel)</code></div><p>Creates the visible Swing table.</p>
+                    <div><code>wasteTable.setRowHeight(34)</code></div><p>Makes rows taller and cleaner.</p>
+                    <div><code>wasteTable.setDefaultRenderer(...)</code></div><p>Uses custom renderer for alternating row colors and category colors.</p>
+                    <div><code>getSelectionModel().addListSelectionListener(...)</code></div><p>Detects when the user selects a table row.</p>
+                    <div><code>fillFormFromSelectedRow()</code></div><p>Copies selected row data into the input form.</p>
+                    <div><code>new JScrollPane(wasteTable)</code></div><p>Adds scrolling around the table.</p>
+                </div>
+            </details>
+
+            <details>
+                <summary>Buttons And Event Handling</summary>
+                <div class="walk-table">
+                    <div><code>JButton addButton = createButton("Add");</code></div><p>Creates a styled Add button.</p>
+                    <div><code>addButton.addActionListener(event -&gt; addWaste());</code></div><p>When clicked, it runs addWaste(). This is Swing event handling.</p>
+                    <div><code>viewButton.addActionListener(event -&gt; loadAllWaste());</code></div><p>Reloads all database rows.</p>
+                    <div><code>updateButton.addActionListener(event -&gt; updateWaste());</code></div><p>Updates selected record.</p>
+                    <div><code>deleteButton.addActionListener(event -&gt; deleteWaste());</code></div><p>Deletes selected record.</p>
+                    <div><code>searchButton.addActionListener(event -&gt; searchWaste());</code></div><p>Searches records.</p>
+                    <div><code>collectedButton.addActionListener(...)</code></div><p>Marks selected record as collected.</p>
+                    <div><code>clearButton.addActionListener(...)</code></div><p>Clears form fields.</p>
+                </div>
+            </details>
+
+            <details>
+                <summary>CRUD GUI Methods</summary>
+                <div class="walk-table">
+                    <div><code>addWaste()</code></div><p>Creates a Waste object from form values, calls wasteManager.addWaste(), clears form, reloads table.</p>
+                    <div><code>try { ... } catch (NumberFormatException ...)</code></div><p>Catches invalid quantity input like abc.</p>
+                    <div><code>catch (SQLException exception)</code></div><p>Catches database errors.</p>
+                    <div><code>loadAllWaste()</code></div><p>Gets all database rows and displays them in JTable.</p>
+                    <div><code>updateWaste()</code></div><p>Reads selected ID, creates updated Waste object, sends it to database.</p>
+                    <div><code>deleteWaste()</code></div><p>Reads selected ID and deletes that row from MySQL.</p>
+                    <div><code>searchWaste()</code></div><p>Reads search text and displays only matching records.</p>
+                    <div><code>markAsCollected()</code></div><p>Reads selected ID and changes status to Collected.</p>
+                    <div><code>createWasteObject(int id)</code></div><p>Reads form values and creates OrganicWaste, RecyclableWaste, or HazardousWaste.</p>
+                    <div><code>Double.parseDouble(quantityField.getText())</code></div><p>Converts text input into a decimal number.</p>
+                    <div><code>showWasteInTable(List&lt;Waste&gt; wasteList)</code></div><p>Clears the table and adds one row for each Waste object.</p>
+                    <div><code>tableModel.addRow(row)</code></div><p>Adds a row to the JTable.</p>
+                    <div><code>fillFormFromSelectedRow()</code></div><p>Copies table values into text fields/dropdowns.</p>
+                    <div><code>clearForm()</code></div><p>Resets all fields and clears table selection.</p>
+                    <div><code>JOptionPane.showMessageDialog(...)</code></div><p>Shows popup messages to the user.</p>
+                </div>
+            </details>
+
+            <details>
+                <summary>Aesthetic Helper Classes</summary>
+                <div class="walk-table">
+                    <div><code>setModernLookAndFeel()</code></div><p>Attempts to use the system's default style.</p>
+                    <div><code>label(String text)</code></div><p>Creates consistently styled labels.</p>
+                    <div><code>cardPanel(...)</code></div><p>Creates rounded white panels.</p>
+                    <div><code>styleInput(...)</code></div><p>Styles text boxes with font, color, border, padding.</p>
+                    <div><code>createButton(String text)</code></div><p>Creates rounded green buttons with hover effect.</p>
+                    <div><code>MouseAdapter mouseEntered/mouseExited</code></div><p>Changes button color when mouse hovers over it.</p>
+                    <div><code>GradientPanel.paintComponent(...)</code></div><p>Draws the main background gradient.</p>
+                    <div><code>HeaderPanel.paintComponent(...)</code></div><p>Draws the top rounded gradient header.</p>
+                    <div><code>RoundedPanel.paintComponent(...)</code></div><p>Draws white rounded panels with border.</p>
+                    <div><code>RoundedButton.paintComponent(...)</code></div><p>Draws rounded button background manually.</p>
+                    <div><code>WasteTableRenderer</code></div><p>Controls table row colors, alignment, and category/status colors.</p>
+                </div>
+            </details>
+        </section>
+
+        <section class="section" id="main">
+            <h2>Main.java</h2>
+            <div class="walk-table">
+                <div><code>package main;</code></div><p>Places the startup class in the main package.</p>
+                <div><code>import dao.DatabaseManager;</code></div><p>Allows startup code to initialize database.</p>
+                <div><code>import gui.WasteManagementGUI;</code></div><p>Allows startup code to create the GUI.</p>
+                <div><code>import javax.swing.JOptionPane;</code></div><p>Used to show error popup if MySQL fails.</p>
+                <div><code>import javax.swing.SwingUtilities;</code></div><p>Used to safely start Swing GUI.</p>
+                <div><code>public class Main</code></div><p>Startup class of the project.</p>
+                <div><code>public static void main(String[] args)</code></div><p>Entry point of the Java application.</p>
+                <div><code>try { ... } catch (SQLException exception)</code></div><p>Handles MySQL connection/setup errors.</p>
+                <div><code>DatabaseManager.initializeDatabase();</code></div><p>Creates database/table before GUI appears.</p>
+                <div><code>gui.setVisible(true);</code></div><p>Displays the Swing window.</p>
+            </div>
+        </section>
+
+        <section class="section" id="sql">
+            <h2>SQL File: setup.sql</h2>
+            <div class="walk-table">
+                <div><code>DROP DATABASE IF EXISTS waste_management_db;</code></div><p>Deletes the old database if it exists. This is for manual reset.</p>
+                <div><code>CREATE DATABASE waste_management_db;</code></div><p>Creates a fresh database.</p>
+                <div><code>USE waste_management_db;</code></div><p>Selects that database for the next commands.</p>
+                <div><code>CREATE TABLE IF NOT EXISTS waste (...)</code></div><p>Creates the waste table if it does not exist.</p>
+                <div><code>id INT AUTO_INCREMENT PRIMARY KEY</code></div><p>Creates unique automatic IDs.</p>
+                <div><code>waste_type VARCHAR(50) NOT NULL</code></div><p>Stores type and does not allow empty value.</p>
+                <div><code>quantity DOUBLE NOT NULL</code></div><p>Stores decimal quantity.</p>
+                <div><code>INSERT INTO waste (...)</code></div><p>Adds sample rows to test the app.</p>
+            </div>
+        </section>
+
+        <section class="section" id="scripts">
+            <h2>Build, Run, And Manifest Files</h2>
+            <div class="walk-table">
+                <div><code>build.sh</code></div><p>Mac/Linux script that compiles and creates the JAR.</p>
+                <div><code>mkdir -p build dist</code></div><p>Creates build and dist folders if missing.</p>
+                <div><code>javac -cp "lib/mysql-connector-j.jar" -d build ...</code></div><p>Compiles Java code and includes the MySQL driver.</p>
+                <div><code>jar cfm dist/WasteManagementSystem.jar manifest.txt -C build .</code></div><p>Creates the runnable JAR using manifest settings.</p>
+                <div><code>run.sh</code></div><p>Runs the built JAR on Mac/Linux.</p>
+                <div><code>java -jar dist/WasteManagementSystem.jar</code></div><p>Starts the application.</p>
+                <div><code>build.bat / run.bat</code></div><p>Windows versions of the build and run scripts.</p>
+                <div><code>manifest.txt</code></div><p>Tells the JAR which class is the main class and where the connector jar is.</p>
+                <div><code>Main-Class: main.Main</code></div><p>When the JAR runs, Java starts from main.Main.</p>
+                <div><code>Class-Path: ../lib/mysql-connector-j.jar</code></div><p>Lets the JAR find the MySQL JDBC driver.</p>
+            </div>
+        </section>
+
+        <section class="section" id="mysql">
+            <h2>How To Check MySQL Database And Data</h2>
+            <h3>Open MySQL Terminal</h3>
+            <pre><code>mysql -u root</code></pre>
+            <h3>Commands Inside MySQL</h3>
+            <pre><code>SHOW DATABASES;
+USE waste_management_db;
+SHOW TABLES;
+DESCRIBE waste;
+SELECT * FROM waste;
+SELECT * FROM waste WHERE status = 'Collected';
+SELECT * FROM waste WHERE waste_type = 'Organic';
+exit;</code></pre>
+            <h3>One-Line Terminal Check</h3>
+            <pre><code>mysql -u root -e "USE waste_management_db; SELECT * FROM waste;"</code></pre>
+            <p>Use this to prove during viva that the GUI data is actually stored in MySQL.</p>
+        </section>
+    </main>
+    <script src="script.js"></script>
+</body>
+</html>

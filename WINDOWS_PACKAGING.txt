@@ -1,0 +1,41 @@
+Windows Runnable / Installable Application Notes
+================================================
+
+Option 1: Simple Runnable JAR
+-----------------------------
+1. Install JDK 21 or newer on Windows.
+2. Install MySQL on Windows.
+3. Create the database by running sql/setup.sql in MySQL Workbench.
+4. Keep this folder structure:
+   WasteManagementSystem
+   - dist/WasteManagementSystem.jar
+   - lib/mysql-connector-j.jar
+   - run.bat
+5. Double-click run.bat.
+
+Option 2: Build On Windows
+--------------------------
+1. Open Command Prompt inside the WasteManagementSystem folder.
+2. Run:
+   build.bat
+3. Run:
+   run.bat
+
+Option 3: Create A Windows Installer With jpackage
+--------------------------------------------------
+Run this on Windows after building the JAR:
+
+jpackage ^
+  --type exe ^
+  --name WasteManagementSystem ^
+  --input dist ^
+  --main-jar WasteManagementSystem.jar ^
+  --main-class main.Main ^
+  --app-version 1.0 ^
+  --dest installer
+
+Important:
+- MySQL must still be installed and running on the target computer.
+- The database must be created using sql/setup.sql.
+- If the MySQL password is different, update src/dao/DatabaseManager.java,
+  rebuild, and run again.

@@ -1,0 +1,87 @@
+Waste Management System - Viva and Demo Guide
+=============================================
+
+Very Short Project Explanation
+------------------------------
+This is a Java desktop application made using Swing. It stores waste collection
+records in a MySQL database using JDBC. The user can add, view, update, delete,
+search, and mark waste records as collected.
+
+OOP Concepts Used
+-----------------
+1. Classes and Objects
+   Waste, OrganicWaste, RecyclableWaste, HazardousWaste, WasteManager, and
+   WasteManagementGUI are classes. Objects are created when adding records.
+
+2. Encapsulation
+   Waste has private fields like id, description, quantity, location, and status.
+   These fields are accessed using getters and setters.
+
+3. Abstraction
+   Waste is an abstract class. It has the abstract method getWasteCategory().
+
+4. Inheritance
+   OrganicWaste, RecyclableWaste, and HazardousWaste extend Waste.
+
+5. Polymorphism
+   getWasteCategory() is overridden in each child class. The same method name
+   gives different results: Organic, Recyclable, or Hazardous.
+
+6. Exception Handling
+   try-catch blocks handle database errors and invalid quantity input.
+
+7. Packages
+   model, dao, gui, and main packages organize the project.
+
+8. Swing Event Handling
+   Button click listeners call methods like addWaste(), updateWaste(), and
+   deleteWaste().
+
+2-5 Minute Demo Script
+----------------------
+1. "This is my Waste Management System, a Java Swing desktop application."
+2. "The backend is MySQL, and Java connects to it using JDBC."
+3. "The table shows existing waste records loaded from the database."
+4. "I will add a new record by selecting a waste type, entering description,
+   quantity, location, and status, then clicking Add."
+5. "Now I can search for a record using a keyword such as Plastic or Lab."
+6. "When I click a table row, the form is filled automatically."
+7. "I can update the selected record and save changes."
+8. "I can mark a selected record as Collected."
+9. "I can also delete a selected record."
+10. "The OOP part is in the model package. Waste is abstract, and the three child
+    classes override getWasteCategory(), showing polymorphism."
+
+Test Cases
+----------
+1. Add Organic Waste
+   Input: Organic, Vegetable peels, 5, Hostel, Pending
+   Expected: New row appears in the table with type Organic.
+
+2. View All Waste
+   Input: Click View All
+   Expected: All records from the MySQL waste table are shown.
+
+3. Search Waste
+   Input: Search text "Plastic"
+   Expected: Only matching records such as Plastic bottles are displayed.
+
+4. Update Waste
+   Input: Select a row, change quantity to 10, click Update
+   Expected: Selected record quantity changes to 10.
+
+5. Mark Collected
+   Input: Select a Pending record, click Mark Collected
+   Expected: Status changes to Collected.
+
+6. Delete Waste
+   Input: Select a row, click Delete
+   Expected: Selected record is removed from table and database.
+
+7. Invalid Quantity
+   Input: Enter quantity "abc", click Add
+   Expected: Error message says quantity must be a valid number.
+
+8. Empty Search
+   Input: Leave search blank, click Search
+   Expected: All records are displayed because blank matches all text.

@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Waste Management System Viva Guide</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <aside class="sidebar">
+        <div class="brand">
+            <span class="brand-mark">W</span>
+            <div>
+                <strong>Waste System</strong>
+                <small>Viva Guide</small>
+            </div>
+        </div>
+        <nav>
+            <a href="#overview">Overview</a>
+            <a href="#software">Software Used</a>
+            <a href="#structure">Project Structure</a>
+            <a href="#flow">How It Works</a>
+            <a href="#database">MySQL</a>
+            <a href="#oop">OOP Concepts</a>
+            <a href="#files">File Explanations</a>
+            <a href="code-walkthrough.html">Full Code Walkthrough</a>
+            <a href="#swing">Swing GUI</a>
+            <a href="#run">Run Commands</a>
+            <a href="#presentation">Presentation</a>
+            <a href="#questions">Viva Questions</a>
+        </nav>
+    </aside>
+
+    <main>
+        <section class="hero" id="overview">
+            <div>
+                <p class="eyebrow">Java Swing + MySQL + JDBC</p>
+                <h1>Waste Management System</h1>
+                <p class="hero-text">
+                    A beginner-friendly desktop application that stores waste records,
+                    displays them in a Swing table, and performs CRUD operations using MySQL.
+                </p>
+                <div class="hero-actions">
+                    <a href="#files" class="button primary">Study The Code</a>
+                    <a href="code-walkthrough.html" class="button secondary">Full Code Walkthrough</a>
+                    <a href="#presentation" class="button secondary">Practice Presentation</a>
+                </div>
+            </div>
+            <div class="system-card">
+                <div class="window-bar"><span></span><span></span><span></span></div>
+                <div class="mini-form">
+                    <label>Waste Type</label><div>Organic</div>
+                    <label>Description</label><div>Food waste</div>
+                    <label>Status</label><div class="pill">Pending</div>
+                </div>
+                <div class="mini-table">
+                    <span>ID</span><span>Type</span><span>Status</span>
+                    <strong>1</strong><strong>Organic</strong><strong>Pending</strong>
+                    <strong>2</strong><strong>Recyclable</strong><strong>Collected</strong>
+                </div>
+            </div>
+        </section>
+
+        <section class="section">
+            <h2>What This Project Does</h2>
+            <div class="grid three">
+                <article class="card"><h3>Add Records</h3><p>User enters waste details and clicks Add. Java sends an INSERT query to MySQL.</p></article>
+                <article class="card"><h3>View Records</h3><p>The app reads all database rows and shows them in a JTable.</p></article>
+                <article class="card"><h3>Update Records</h3><p>Selecting a row fills the form. Edited values are saved with an UPDATE query.</p></article>
+                <article class="card"><h3>Delete Records</h3><p>The selected record ID is sent to a DELETE query.</p></article>
+                <article class="card"><h3>Search Records</h3><p>The search box filters records by description, location, type, or status.</p></article>
+                <article class="card"><h3>Mark Collected</h3><p>A selected record's status is changed to Collected.</p></article>
+            </div>
+        </section>
+
+        <section class="section" id="software">
+            <h2>Software, Packages, And Technologies Used</h2>
+            <div class="table-card">
+                <table>
+                    <thead><tr><th>Item</th><th>Purpose</th><th>Where Used</th></tr></thead>
+                    <tbody>
+                        <tr><td>Java</td><td>Main programming language</td><td>All .java files</td></tr>
+                        <tr><td>Java Swing</td><td>Creates desktop GUI components like buttons, text fields, table, frame</td><td>WasteManagementGUI.java</td></tr>
+                        <tr><td>MySQL</td><td>Stores the waste records permanently</td><td>waste_management_db database</td></tr>
+                        <tr><td>JDBC</td><td>Connects Java code to MySQL</td><td>DatabaseManager.java and WasteManager.java</td></tr>
+                        <tr><td>MySQL Connector/J</td><td>JDBC driver jar that allows Java to talk to MySQL</td><td>lib/mysql-connector-j.jar</td></tr>
+                        <tr><td>PreparedStatement</td><td>Runs SQL safely with values passed separately</td><td>INSERT, UPDATE, DELETE, SEARCH queries</td></tr>
+                        <tr><td>JTable</td><td>Displays database rows in the GUI</td><td>WasteManagementGUI.java</td></tr>
+                        <tr><td>JAR</td><td>Runnable packaged Java application</td><td>dist/WasteManagementSystem.jar</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <section class="section" id="structure">
+            <h2>Project Structure</h2>
+            <div class="structure">
+                <pre><code>WasteManagementSystem
+├── src
+│   ├── model
+│   │   ├── Waste.java
+│   │   ├── OrganicWaste.java
+│   │   ├── RecyclableWaste.java
+│   │   └── HazardousWaste.java
+│   ├── dao
+│   │   ├── DatabaseManager.java
+│   │   └── WasteManager.java
+│   ├── gui
+│   │   └── WasteManagementGUI.java
+│   └── main
+│       └── Main.java
+├── lib/mysql-connector-j.jar
+├── sql/setup.sql
+├── dist/WasteManagementSystem.jar
+├── build.sh / run.sh
+└── build.bat / run.bat</code></pre>
+                <div class="notes">
+                    <p><strong>model</strong> contains OOP classes.</p>
+                    <p><strong>dao</strong> contains database code.</p>
+                    <p><strong>gui</strong> contains Swing interface code.</p>
+                    <p><strong>main</strong> starts the application.</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="section" id="flow">
+            <h2>How The Application Works</h2>
+            <div class="flow">
+                <div>Main.java<br><small>starts app</small></div>
+                <span>→</span>
+                <div>DatabaseManager<br><small>creates DB/table</small></div>
+                <span>→</span>
+                <div>WasteManagementGUI<br><small>shows form/table</small></div>
+                <span>→</span>
+                <div>WasteManager<br><small>runs SQL</small></div>
+                <span>→</span>
+                <div>MySQL<br><small>stores data</small></div>
+            </div>
+            <p class="plain">
+                When the app starts, it first checks MySQL. If the database or table does not exist,
+                it creates them. Then the Swing window opens. Button clicks call Java methods, and
+                those methods call SQL queries through JDBC.
+            </p>
+        </section>
+
+        <section class="section" id="database">
+            <h2>MySQL Database Explanation</h2>
+            <p>The project uses one database and one table. This keeps the project short and easy to explain.</p>
+            <div class="code-grid">
+                <article class="code-card">
+                    <h3>Database</h3>
+                    <pre><code>waste_management_db</code></pre>
+                    <p>This database stores the whole project data.</p>
+                </article>
+                <article class="code-card">
+                    <h3>Table</h3>
+                    <pre><code>waste</code></pre>
+                    <p>This table stores individual waste records.</p>
+                </article>
+            </div>
+            <div class="table-card">
+                <table>
+                    <thead><tr><th>Column</th><th>Type</th><th>Meaning</th></tr></thead>
+                    <tbody>
+                        <tr><td>id</td><td>INT AUTO_INCREMENT PRIMARY KEY</td><td>Unique number for every record</td></tr>
+                        <tr><td>waste_type</td><td>VARCHAR(50)</td><td>Organic, Recyclable, or Hazardous</td></tr>
+                        <tr><td>description</td><td>VARCHAR(255)</td><td>Short explanation of the waste</td></tr>
+                        <tr><td>quantity</td><td>DOUBLE</td><td>Amount of waste in kg</td></tr>
+                        <tr><td>location</td><td>VARCHAR(100)</td><td>Where the waste is located</td></tr>
+                        <tr><td>status</td><td>VARCHAR(50)</td><td>Pending or Collected</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <h3>Useful MySQL Commands</h3>
+            <pre><code>mysql -u root
+SHOW DATABASES;
+USE waste_management_db;
+SHOW TABLES;
+DESCRIBE waste;
+SELECT * FROM waste;
+SELECT * FROM waste WHERE status = 'Collected';
+exit;</code></pre>
+        </section>
+
+        <section class="section" id="oop">
+            <h2>OOP Concepts In This Project</h2>
+            <div class="grid two">
+                <article class="card"><h3>Classes And Objects</h3><p>Each .java file defines a class. Objects are created when waste records are added or read from MySQL.</p></article>
+                <article class="card"><h3>Encapsulation</h3><p>Waste fields are private. They are accessed using getters and setters.</p></article>
+                <article class="card"><h3>Abstraction</h3><p>Waste is abstract because a general waste object must be categorized by child classes.</p></article>
+                <article class="card"><h3>Inheritance</h3><p>OrganicWaste, RecyclableWaste, and HazardousWaste extend Waste.</p></article>
+                <article class="card"><h3>Polymorphism</h3><p>getWasteCategory() behaves differently depending on the object type.</p></article>
+                <article class="card"><h3>Exception Handling</h3><p>try-catch handles invalid quantity and database errors.</p></article>
+                <article class="card"><h3>Packages</h3><p>model, dao, gui, and main separate responsibilities.</p></article>
+                <article class="card"><h3>Swing Event Handling</h3><p>Button listeners run actions when the user clicks buttons.</p></article>
+            </div>
+        </section>
+
+        <section class="section" id="files">
+            <h2>Every File Explained</h2>
+            <p>Use this section for code-by-code viva preparation.</p>
+
+            <details open>
+                <summary>model/Waste.java</summary>
+                <p><strong>Purpose:</strong> Abstract parent class for all waste types. It stores common fields and forces child classes to provide a waste category.</p>
+                <pre><code>public abstract class Waste</code></pre>
+                <p><strong>Meaning:</strong> abstract means we do not create a direct Waste object. We create OrganicWaste, RecyclableWaste, or HazardousWaste.</p>
+                <pre><code>private int id;
+private String description;
+private double quantity;
+private String location;
+private String status;</code></pre>
+                <p><strong>Meaning:</strong> private fields demonstrate encapsulation. Other classes cannot access them directly.</p>
+                <pre><code>public abstract String getWasteCategory();</code></pre>
+                <p><strong>Meaning:</strong> this abstract method must be implemented by every child class.</p>
+                <pre><code>public String getDescription()
+public void setDescription(String description)</code></pre>
+                <p><strong>Meaning:</strong> getters and setters control access to private data.</p>
+            </details>
+
+            <details>
+                <summary>model/OrganicWaste.java</summary>
+                <p><strong>Purpose:</strong> Represents organic waste records.</p>
+                <pre><code>public class OrganicWaste extends Waste</code></pre>
+                <p><strong>Meaning:</strong> OrganicWaste inherits common fields and methods from Waste.</p>
+                <pre><code>@Override
+public String getWasteCategory() {
+    return "Organic";
+}</code></pre>
+                <p><strong>Meaning:</strong> This overrides the abstract method and returns the category Organic.</p>
+            </details>
+
+            <details>
+                <summary>model/RecyclableWaste.java</summary>
+                <p><strong>Purpose:</strong> Represents recyclable waste records.</p>
+                <pre><code>public class RecyclableWaste extends Waste</code></pre>
+                <p><strong>Meaning:</strong> It reuses the common Waste fields and only changes the category behavior.</p>
+                <pre><code>return "Recyclable";</code></pre>
+                <p><strong>Meaning:</strong> This is polymorphism because the same method name returns a different value.</p>
+            </details>
+
+            <details>
+                <summary>model/HazardousWaste.java</summary>
+                <p><strong>Purpose:</strong> Represents hazardous waste records.</p>
+                <pre><code>public class HazardousWaste extends Waste</code></pre>
+                <p><strong>Meaning:</strong> It is a child class of Waste.</p>
+                <pre><code>return "Hazardous";</code></pre>
+                <p><strong>Meaning:</strong> It gives its own version of getWasteCategory().</p>
+            </details>
+
+            <details>
+                <summary>dao/DatabaseManager.java</summary>
+                <p><strong>Purpose:</strong> Handles MySQL connection and automatic database setup.</p>
+                <pre><code>private static final String SERVER_URL = "jdbc:mysql://localhost:3306/";
+private static final String DATABASE_NAME = "waste_management_db";
+private static final String USERNAME = "root";
+private static final String PASSWORD = "";</code></pre>
+                <p><strong>Meaning:</strong> These are the database connection settings. If MySQL password changes, update PASSWORD.</p>
+                <pre><code>public static Connection getConnection() throws SQLException</code></pre>
+                <p><strong>Meaning:</strong> This method returns a JDBC connection object used by other DAO methods.</p>
+                <pre><code>DriverManager.getConnection(DATABASE_URL, USERNAME, PASSWORD)</code></pre>
+                <p><strong>Meaning:</strong> DriverManager uses the MySQL connector jar to connect Java to MySQL.</p>
+                <pre><code>initializeDatabase()</code></pre>
+                <p><strong>Meaning:</strong> This method creates the database, creates the table, and inserts starter records if the table is empty.</p>
+                <pre><code>CREATE DATABASE IF NOT EXISTS
+CREATE TABLE IF NOT EXISTS</code></pre>
+                <p><strong>Meaning:</strong> These SQL commands prevent errors if the database/table already exists.</p>
+            </details>
+
+            <details>
+                <summary>dao/WasteManager.java</summary>
+                <p><strong>Purpose:</strong> Performs CRUD operations for waste records.</p>
+                <pre><code>public void addWaste(Waste waste) throws SQLException</code></pre>
+                <p><strong>Meaning:</strong> Adds one waste object to MySQL using INSERT.</p>
+                <pre><code>PreparedStatement statement = connection.prepareStatement(sql)</code></pre>
+                <p><strong>Meaning:</strong> PreparedStatement safely sends values to SQL placeholders.</p>
+                <pre><code>statement.setString(1, waste.getWasteCategory())</code></pre>
+                <p><strong>Meaning:</strong> Java fills the first ? in the SQL query with the waste category.</p>
+                <pre><code>public List&lt;Waste&gt; getAllWaste()</code></pre>
+                <p><strong>Meaning:</strong> Reads all records from MySQL and returns them as a Java List.</p>
+                <pre><code>while (resultSet.next())</code></pre>
+                <p><strong>Meaning:</strong> Loops through every row returned from the SELECT query.</p>
+                <pre><code>searchWaste(String keyword)</code></pre>
+                <p><strong>Meaning:</strong> Searches by matching keyword in description, location, type, or status.</p>
+                <pre><code>updateWaste(Waste waste)</code></pre>
+                <p><strong>Meaning:</strong> Updates a selected record using its ID.</p>
+                <pre><code>deleteWaste(int id)</code></pre>
+                <p><strong>Meaning:</strong> Deletes one record by ID.</p>
+                <pre><code>markAsCollected(int id)</code></pre>
+                <p><strong>Meaning:</strong> Changes only the status column to Collected.</p>
+                <pre><code>createWasteFromResultSet(ResultSet resultSet)</code></pre>
+                <p><strong>Meaning:</strong> Converts a database row into the correct Java object type.</p>
+            </details>
+
+            <details>
+                <summary>gui/WasteManagementGUI.java</summary>
+                <p><strong>Purpose:</strong> Creates the complete Swing interface and connects button clicks to CRUD methods.</p>
+                <pre><code>public class WasteManagementGUI extends JFrame</code></pre>
+                <p><strong>Meaning:</strong> JFrame is the main window of a Swing desktop application.</p>
+                <pre><code>JTextField, JComboBox, JTable, JButton</code></pre>
+                <p><strong>Meaning:</strong> These are Swing components: text boxes, dropdowns, table, and buttons.</p>
+                <pre><code>createFormPanel()</code></pre>
+                <p><strong>Meaning:</strong> Builds the input form for ID, type, description, quantity, location, and status.</p>
+                <pre><code>createTablePanel()</code></pre>
+                <p><strong>Meaning:</strong> Builds the JTable that displays database records.</p>
+                <pre><code>createButtonPanel()</code></pre>
+                <p><strong>Meaning:</strong> Builds Add, View All, Update, Delete, Search, Mark Collected, and Clear buttons.</p>
+                <pre><code>addButton.addActionListener(event -&gt; addWaste());</code></pre>
+                <p><strong>Meaning:</strong> This is Swing event handling. When the button is clicked, addWaste() runs.</p>
+                <pre><code>createWasteObject(int id)</code></pre>
+                <p><strong>Meaning:</strong> Reads form values and creates the correct child object based on selected waste type.</p>
+                <pre><code>showWasteInTable(List&lt;Waste&gt; wasteList)</code></pre>
+                <p><strong>Meaning:</strong> Takes Java objects and displays them as table rows.</p>
+                <pre><code>fillFormFromSelectedRow()</code></pre>
+                <p><strong>Meaning:</strong> When a table row is selected, its values are copied into the form for editing.</p>
+                <pre><code>GradientPanel, HeaderPanel, RoundedPanel, RoundedButton</code></pre>
+                <p><strong>Meaning:</strong> These helper classes make the interface aesthetic using custom Swing painting.</p>
+            </details>
+
+            <details>
+                <summary>main/Main.java</summary>
+                <p><strong>Purpose:</strong> Starts the application.</p>
+                <pre><code>SwingUtilities.invokeLater(() -&gt; { ... })</code></pre>
+                <p><strong>Meaning:</strong> Starts Swing safely on the Event Dispatch Thread, which is the correct thread for GUI work.</p>
+                <pre><code>DatabaseManager.initializeDatabase();</code></pre>
+                <p><strong>Meaning:</strong> Makes sure MySQL database and table exist before showing the GUI.</p>
+                <pre><code>new WasteManagementGUI().setVisible(true);</code></pre>
+                <p><strong>Meaning:</strong> Creates and displays the desktop window.</p>
+                <pre><code>catch (SQLException exception)</code></pre>
+                <p><strong>Meaning:</strong> If MySQL is not running or login fails, the app shows an error dialog.</p>
+            </details>
+
+            <details>
+                <summary>sql/setup.sql</summary>
+                <p><strong>Purpose:</strong> Manual SQL setup file for teachers or manual database testing.</p>
+                <pre><code>DROP DATABASE IF EXISTS waste_management_db;
+CREATE DATABASE waste_management_db;
+USE waste_management_db;</code></pre>
+                <p><strong>Meaning:</strong> Recreates the database from scratch.</p>
+                <pre><code>CREATE TABLE IF NOT EXISTS waste (...)</code></pre>
+                <p><strong>Meaning:</strong> Creates the waste table structure.</p>
+                <pre><code>INSERT INTO waste (...)</code></pre>
+                <p><strong>Meaning:</strong> Adds sample data.</p>
+            </details>
+
+            <details>
+                <summary>build.sh, run.sh, build.bat, run.bat</summary>
+                <p><strong>Purpose:</strong> Build and run the project easily on Mac/Linux and Windows.</p>
+                <pre><code>javac -cp "lib/mysql-connector-j.jar" -d build ...</code></pre>
+                <p><strong>Meaning:</strong> Compiles Java files and includes the MySQL JDBC connector.</p>
+                <pre><code>jar cfm dist/WasteManagementSystem.jar manifest.txt -C build .</code></pre>
+                <p><strong>Meaning:</strong> Packages compiled classes into a runnable JAR file.</p>
+                <pre><code>java -jar dist/WasteManagementSystem.jar</code></pre>
+                <p><strong>Meaning:</strong> Runs the desktop application.</p>
+            </details>
+        </section>
+
+        <section class="section" id="swing">
+            <h2>What Is Swing?</h2>
+            <p>
+                Swing is Java's built-in toolkit for creating desktop applications.
+                It provides ready-made GUI components like windows, buttons, labels,
+                text boxes, dropdowns, and tables.
+            </p>
+            <div class="grid two">
+                <article class="card"><h3>JFrame</h3><p>Main application window.</p></article>
+                <article class="card"><h3>JPanel</h3><p>Container used to organize components.</p></article>
+                <article class="card"><h3>JLabel</h3><p>Displays text labels.</p></article>
+                <article class="card"><h3>JTextField</h3><p>Lets users type input.</p></article>
+                <article class="card"><h3>JComboBox</h3><p>Dropdown menu for type/status selection.</p></article>
+                <article class="card"><h3>JTable</h3><p>Displays records in rows and columns.</p></article>
+                <article class="card"><h3>JButton</h3><p>Clickable action button.</p></article>
+                <article class="card"><h3>JOptionPane</h3><p>Shows success and error popup messages.</p></article>
+            </div>
+        </section>
+
+        <section class="section" id="run">
+            <h2>How To Run And Check Everything</h2>
+            <h3>Run The App</h3>
+            <pre><code>cd /Users/josephfidel/Desktop/WasteManagementSystem
+./run.sh</code></pre>
+            <h3>Rebuild The App</h3>
+            <pre><code>cd /Users/josephfidel/Desktop/WasteManagementSystem
+./build.sh</code></pre>
+            <h3>Start MySQL</h3>
+            <pre><code>brew services start mysql</code></pre>
+            <h3>Check Database Data</h3>
+            <pre><code>mysql -u root -e "USE waste_management_db; SELECT * FROM waste;"</code></pre>
+            <h3>Windows Run</h3>
+            <pre><code>build.bat
+run.bat</code></pre>
+        </section>
+
+        <section class="section" id="presentation">
+            <h2>2-5 Minute Presentation Script</h2>
+            <ol class="script">
+                <li>Good morning. My project is called Waste Management System.</li>
+                <li>It is a Java desktop application, not a web application.</li>
+                <li>I used Java Swing for the interface and MySQL for storing records.</li>
+                <li>Java connects to MySQL using JDBC and the MySQL Connector/J driver.</li>
+                <li>The main features are add, view, update, delete, search, and mark waste as collected.</li>
+                <li>The project is divided into packages: model, dao, gui, and main.</li>
+                <li>In the model package, Waste is an abstract class. OrganicWaste, RecyclableWaste, and HazardousWaste inherit from it.</li>
+                <li>Encapsulation is shown using private fields and getters/setters.</li>
+                <li>Polymorphism is shown using getWasteCategory(), which returns different values in each child class.</li>
+                <li>The dao package handles database connection and CRUD queries using PreparedStatement.</li>
+                <li>The gui package contains the Swing window, form, table, and button event handling.</li>
+                <li>The main package starts the application and initializes the database.</li>
+            </ol>
+        </section>
+
+        <section class="section" id="questions">
+            <h2>Common Viva Questions And Answers</h2>
+            <div class="qa">
+                <details><summary>Why did you use Swing?</summary><p>Swing is built into Java and is suitable for simple desktop applications. It does not need web technologies.</p></details>
+                <details><summary>Why did you use MySQL?</summary><p>MySQL stores records permanently, so data remains even after closing the app.</p></details>
+                <details><summary>What is JDBC?</summary><p>JDBC is Java Database Connectivity. It allows Java programs to connect to databases and run SQL queries.</p></details>
+                <details><summary>Why use PreparedStatement?</summary><p>It makes SQL queries safer and cleaner by separating SQL structure from user values.</p></details>
+                <details><summary>What is abstraction in your project?</summary><p>Waste is abstract and contains the abstract method getWasteCategory().</p></details>
+                <details><summary>What is inheritance in your project?</summary><p>OrganicWaste, RecyclableWaste, and HazardousWaste extend Waste.</p></details>
+                <details><summary>What is polymorphism in your project?</summary><p>The same method getWasteCategory() returns different values depending on the object type.</p></details>
+                <details><summary>What is encapsulation in your project?</summary><p>Fields in Waste are private and accessed through getters and setters.</p></details>
+                <details><summary>How does the Add button work?</summary><p>The Add button event calls addWaste(), creates a Waste child object, then WasteManager inserts it into MySQL.</p></details>
+                <details><summary>How does data appear in the table?</summary><p>WasteManager runs SELECT, converts rows into Waste objects, and the GUI displays them in JTable.</p></details>
+            </div>
+        </section>
+    </main>
+
+    <script src="script.js"></script>
+</body>
+</html>
