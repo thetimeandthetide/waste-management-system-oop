@@ -1,60 +1,52 @@
 # Waste Management System
 
-A beginner-friendly Java OOP desktop application built with Swing, MySQL, and JDBC.
-
-## What It Does
-
-- Add waste records
-- View all waste records
-- Update selected records
-- Delete selected records
-- Search records
-- Mark waste as collected
-- Store data permanently in MySQL
-
-## Technologies Used
-
-- Java
-- Java Swing
-- MySQL
-- JDBC
-- MySQL Connector/J
-- Firebase Hosting for the viva website
-
-## Project Structure
+This repository contains two separate parts:
 
 ```text
-src/model      OOP model classes
-src/dao        JDBC and CRUD database classes
-src/gui        Swing interface
-src/main       Application entry point
-sql            MySQL setup script
-lib            MySQL JDBC connector
-dist           Runnable JAR
-VivaWebsite    Website explaining the full project for viva/presentation
+DesktopApplication/   Java Swing + MySQL desktop application
+Website/              Viva/presentation website explaining the project
 ```
 
-## Run On macOS/Linux
+## 1. Desktop Application
+
+Location:
+
+```text
+DesktopApplication/
+```
+
+This is the actual Java OOP mini project.
+
+It includes:
+
+- Java Swing desktop GUI
+- MySQL backend
+- JDBC connection
+- MySQL Connector/J driver
+- CRUD operations
+- Runnable JAR
+- Windows and macOS/Linux run scripts
+- SQL setup file
+
+### Run On macOS/Linux
 
 ```bash
+cd DesktopApplication
 brew services start mysql
 ./build.sh
 ./run.sh
 ```
 
-## Run On Windows
+### Run On Windows
 
-1. Install Java JDK and MySQL.
-2. Make sure MySQL is running.
-3. Open Command Prompt inside this folder.
-4. Run:
+Open Command Prompt inside `DesktopApplication`, then run:
 
 ```bat
 build.bat
 run.bat
 ```
 
-## MySQL Check Commands
+### MySQL Check Commands
 
 ```bash
 mysql -u root
@@ -68,13 +60,58 @@ DESCRIBE waste;
 SELECT * FROM waste;
 ```
 
-## Live Viva Website
+## 2. Viva Website
+
+Location:
+
+```text
+Website/
+```
+
+This is a static website that explains the whole project for viva and presentation preparation.
+
+It includes:
+
+- Full project overview
+- Software and package explanation
+- OOP concept explanation
+- Swing explanation
+- Every file explanation
+- Detailed code walkthrough
+- MySQL commands
+- Presentation script
+- Viva questions and answers
+
+### Live Website
 
 https://waste-viva-joseph-1791639455.web.app
 
-Detailed walkthrough:
+### Detailed Code Walkthrough
 
 https://waste-viva-joseph-1791639455.web.app/code-walkthrough
+
+### Run Website Locally
+
+```bash
+cd Website
+python3 -m http.server 8085
+```
+
+Then open:
+
+```text
+http://localhost:8085
+```
+
+## Technologies Used
+
+- Java
+- Java Swing
+- MySQL
+- JDBC
+- MySQL Connector/J
+- Firebase Hosting
+- HTML, CSS, JavaScript
 
 ## OOP Concepts Demonstrated
 

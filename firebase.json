@@ -1,6 +1,6 @@
 {
   "hosting": {
-    "public": "VivaWebsite",
+    "public": "Website",
     "ignore": [
       "firebase.json",
       "**/.*",

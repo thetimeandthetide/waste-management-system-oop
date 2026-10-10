@@ -1,4 +1,4 @@
-build/
+DesktopApplication/build/
 .firebase/
 .DS_Store
 *.log
