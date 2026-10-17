@@ -1,6 +1,7 @@
 package gui;
 
 import dao.ReportManager;
+import dao.UserManager;
 import dao.AnnouncementManager;
 import dao.WasteManager;
 import model.Announcement;
@@ -58,7 +59,10 @@ public class WasteManagementGUI extends JFrame {
     private static final Color LINE = new Color(226, 225, 234);
     private static final String[] AREAS = {
             "Civil canteen", "Mech front", "Dhwani", "Gazebo", "CS front", "Golden walkway",
-            "Electrical gate", "Indoor court", "Archie corner", "College front", "DJ hall", "CGPU hall", "CETAA hall"
+            "Electrical gate", "Indoor court", "Archie corner", "College front", "DJ hall", "CGPU hall", "CETAA hall",
+            "Industrial department front", "EC department front", "Rohith square", "Sargam stage", "Library front",
+            "Ohm's villa", "Industrial base", "College ground", "Research block", "Old EC department",
+            "Hydraulics lab front", "Back gate", "Mh front", "Lh front", "Flag post"
     };
     private static final DateTimeFormatter DATE_TIME_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
 
@@ -66,6 +70,7 @@ public class WasteManagementGUI extends JFrame {
     private final WasteManager wasteManager = new WasteManager();
     private final ReportManager reportManager = new ReportManager();
     private final AnnouncementManager announcementManager = new AnnouncementManager();
+    private final UserManager userManager = new UserManager();
     private Timer approvalRefreshTimer;
     private final CardLayout pageLayout = new CardLayout();
     private final JPanel pageHost = new JPanel(pageLayout);
@@ -77,6 +82,8 @@ public class WasteManagementGUI extends JFrame {
     private List<Announcement> announcements = new ArrayList<>();
     private JTable completionRequestsTable;
     private DefaultTableModel completionRequestsModel;
+    private JTextField memberSearchField;
+    private DefaultTableModel memberDirectoryModel;
 
     private JTextField descriptionField;
     private JTextField quantityField;
@@ -123,7 +130,10 @@ public class WasteManagementGUI extends JFrame {
         pageHost.add(createRecordsPage(), "records");
         pageHost.add(createReportsPage(), "reports");
         pageHost.add(createAnnouncementsPage(), "announcements");
-        if (user.isAdmin()) pageHost.add(createApprovalsPage(), "approvals");
+        if (user.isAdmin()) {
+            pageHost.add(createApprovalsPage(), "approvals");
+            pageHost.add(createMembersPage(), "members");
+        }
         add(createSidebar(), BorderLayout.WEST);
         add(createTopBar(), BorderLayout.NORTH);
         add(pageHost, BorderLayout.CENTER);
@@ -132,6 +142,7 @@ public class WasteManagementGUI extends JFrame {
         refreshReports();
         refreshAnnouncements();
         refreshApprovalRequests();
+        refreshMembers();
         if (user.isAdmin()) {
             approvalRefreshTimer = new Timer(15000, event -> refreshApprovalCount());
             approvalRefreshTimer.start();
@@ -152,12 +163,17 @@ public class WasteManagementGUI extends JFrame {
         navigation.setOpaque(false);
         JButton records = navButton("Waste records");
         JButton reports = navButton(user.isAdmin() ? "Reports dashboard" : "My progress");
+        JButton members = user.isAdmin() ? navButton("Member directory") : null;
         announcementsNavigation = navButton("Announcements");
         if (user.isAdmin()) completionRequestsNavigation = navButton("Collection approvals (0)");
         records.addActionListener(event -> pageLayout.show(pageHost, "records"));
         reports.addActionListener(event -> {
             refreshReports();
             pageLayout.show(pageHost, "reports");
+        });
+        if (user.isAdmin()) members.addActionListener(event -> {
+            refreshMembers();
+            pageLayout.show(pageHost, "members");
         });
         announcementsNavigation.addActionListener(event -> {
             refreshAnnouncements();
@@ -169,6 +185,7 @@ public class WasteManagementGUI extends JFrame {
         });
         navigation.add(records);
         navigation.add(reports);
+        if (user.isAdmin()) navigation.add(members);
         navigation.add(announcementsNavigation);
         if (user.isAdmin()) navigation.add(completionRequestsNavigation);
 
@@ -373,6 +390,67 @@ public class WasteManagementGUI extends JFrame {
         panel.add(actions, BorderLayout.SOUTH);
         page.add(panel, BorderLayout.CENTER);
         return page;
+    }
+
+    private JPanel createMembersPage() {
+        JPanel page = pagePanel(new BorderLayout(16, 16));
+        page.add(heading("Member directory", "Registered Clean CET members and their assigned locations."), BorderLayout.NORTH);
+        JPanel panel = card(new BorderLayout(10, 10));
+        JPanel search = new JPanel(new BorderLayout(10, 0));
+        search.setOpaque(false);
+        memberSearchField = input(new JTextField());
+        JButton find = button("Search members", false);
+        JButton refresh = button("Refresh", false);
+        JButton addArea = button("Add registration area", true);
+        find.addActionListener(event -> refreshMembers());
+        refresh.addActionListener(event -> { memberSearchField.setText(""); refreshMembers(); });
+        addArea.addActionListener(event -> addRegistrationArea());
+        search.add(new JLabel("Search members"), BorderLayout.WEST);
+        search.add(memberSearchField, BorderLayout.CENTER);
+        JPanel actions = new JPanel(new GridLayout(1, 3, 8, 0));
+        actions.setOpaque(false);
+        actions.add(find);
+        actions.add(refresh);
+        actions.add(addArea);
+        search.add(actions, BorderLayout.EAST);
+        panel.add(search, BorderLayout.NORTH);
+        memberDirectoryModel = readOnlyModel(new String[]{"Name", "Username", "Date of birth", "CET register number",
+                "Department", "Assigned area", "Account"});
+        JTable members = new JTable(memberDirectoryModel);
+        styleTable(members);
+        members.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
+        int[] widths = {150, 100, 115, 155, 170, 190, 85};
+        for (int i = 0; i < widths.length; i++) members.getColumnModel().getColumn(i).setPreferredWidth(widths[i]);
+        panel.add(new JScrollPane(members), BorderLayout.CENTER);
+        JLabel note = new JLabel("Passwords are stored as salted hashes and are never visible in the directory.");
+        note.setForeground(MUTED);
+        panel.add(note, BorderLayout.SOUTH);
+        page.add(panel, BorderLayout.CENTER);
+        return page;
+    }
+
+    private void refreshMembers() {
+        if (!user.isAdmin() || memberDirectoryModel == null) return;
+        try {
+            memberDirectoryModel.setRowCount(0);
+            for (Object[] member : userManager.getMembers(user, memberSearchField.getText())) {
+                memberDirectoryModel.addRow(member);
+            }
+        } catch (SQLException exception) {
+            showError("Could not load member directory: " + exception.getMessage());
+        }
+    }
+
+    private void addRegistrationArea() {
+        String area = JOptionPane.showInputDialog(this, "New area for future member assignment:",
+                "Add registration area", JOptionPane.QUESTION_MESSAGE);
+        if (area == null) return;
+        try {
+            userManager.addRegistrationArea(area, user);
+            showMessage("Registration area added. It is now available for random assignment to a new member.");
+        } catch (IllegalArgumentException | SQLException exception) {
+            showError(exception.getMessage());
+        }
     }
 
     private JPanel createAnnouncementsPage() {

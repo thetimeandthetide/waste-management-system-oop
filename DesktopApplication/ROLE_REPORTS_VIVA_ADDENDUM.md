@@ -12,6 +12,8 @@ It is a desktop-only Java Swing application. `Main` initializes MySQL and opens 
 - `src/gui/LoginFrame.java`: username/password form, login button event, calls authentication, passes the authenticated user to the main GUI.
 - `src/gui/WasteManagementGUI.java`: builds the role-aware Swing dashboard, record form/table, admin collection-approval queue, reports, applied date filters, chart, CSV export, announcements inbox, validation, confirmation dialogs, and button event listeners.
 - `src/gui/CleanButtonUI.java`: paints shared button backgrounds and interaction states consistently across operating-system look-and-feels.
+- `src/dao/UserManager.java`: validates registration, rejects duplicate usernames/register numbers, claims an unused area transactionally, searches the admin directory, and adds future areas.
+- `src/model/RegistrationResult.java`: carries a new user and temporary password for the one-time registration confirmation.
 - `src/model/Waste.java`: abstract waste entity with private common data and accessors; includes collector, record author, collected time, and invalid reason.
 - `src/model/OrganicWaste.java`, `RecyclableWaste.java`, `HazardousWaste.java`: concrete subclasses implementing `getWasteCategory()`.
 - `src/model/AppUser.java`: authenticated identity, role, and assigned territory passed through the app.
@@ -31,7 +33,7 @@ It is a desktop-only Java Swing application. `Main` initializes MySQL and opens 
 
 ## Data model and SQL
 
-`app_users` stores the login identity, role, assigned area, password hash, salt, and active state. `waste` stores type, description, quantity in kg, actual location, status, record author (`created_by`), credited collector (`collected_by`), collection timestamp, and optional invalid reason. `announcements` stores admin broadcasts, `announcement_reads` records each member's read status, and `completion_requests` records member requests and administrator review outcomes. Foreign keys connect these records; startup adds tables/columns without dropping waste records.
+`app_users` stores login identity, DOB, CET register number, department, role, assigned area, password hash/salt, and active state. `registration_areas` tracks locations available for new members and their assignments. `waste` stores type, description, quantity in kg, actual location, status, record author (`created_by`), credited collector (`collected_by`), collection timestamp, and optional invalid reason. `announcements` stores admin broadcasts, `announcement_reads` records each member's read status, and `completion_requests` records member requests and administrator review outcomes. Startup adds profile columns/tables without dropping waste records.
 
 `PreparedStatement` binds runtime values to `?` placeholders. This separates SQL syntax from user input and prevents ordinary input from changing the query structure. `ResultSet` reads the rows returned by `SELECT`. `try`-with-resources closes JDBC connections, statements, and results when a method finishes.
 
@@ -43,6 +45,8 @@ SHOW TABLES;
 DESCRIBE app_users;
 DESCRIBE waste;
 SELECT username, display_name, role, assigned_area, active FROM app_users;
+SELECT display_name, date_of_birth, register_number, department, assigned_area FROM app_users WHERE role='USER';
+SELECT area_name, assigned_username FROM registration_areas ORDER BY area_name;
 SELECT id, waste_type, quantity, location, status, collected_at, collected_by FROM waste ORDER BY collected_at DESC;
 SELECT waste_type, SUM(quantity) AS kg FROM waste WHERE status='COMPLETED' GROUP BY waste_type;
 SELECT location, waste_type, SUM(quantity) AS kg FROM waste WHERE status='COMPLETED' GROUP BY location, waste_type ORDER BY location;
@@ -60,10 +64,13 @@ There is one normalized record table, not one table for each person. Reports use
 | Mark invalid | Own/credited pending record | Any pending record |
 | Request completion / mark as collected | Request own pending record | Approve/reject requests; may mark a pending record collected directly |
 | Delete | No | Yes, with confirmation in GUI |
-| Reports | Own contribution only | Overall, all 13 members, and all areas |
+| Reports | Own contribution only | Overall, all registered members, and all areas |
 | Announcements | Read broadcast notices; unread status clears when opened | Publish notices to all members |
+| Registration | Register a profile with a unique first-name username and CET register number | Search profiles and add registration areas |
 
 Members are seeded with their assigned areas: Aman Fayad/Civil canteen, Joseph Fidel/Mech front, Nivedya/Dhwani, Ayshwaria/Gazebo, Nida/CS front, Arya/Golden walkway, Ahban/Electrical gate, Sidharth/Indoor court, Heera/Archie corner, Keerthana/College front, Farzeen/DJ hall, Merin/CGPU hall, and Shyam/CETAA hall. Usernames are lowercase first names.
+
+New members select Join Clean CET on the login screen. The app validates their name, date, and register-number format, derives the lowercase first-name username, rejects duplicate usernames/register numbers, and randomly assigns one unused area in a database transaction. The administrator can add more areas from the Member directory. Existing seeded members have no DOB/register/department unless updated separately, so missing profile values are displayed as "Not provided". DOB and student identifiers are personal data; obtain consent before recording them in a public presentation. Register numbers are format-checked only and are not verified against an official CET registry.
 
 The actual `location` is where collection happened. If it differs from the member's assigned area, that amount contributes to their personal bonus total, while the area report credits the actual collection location. Area totals are calculated as kilograms and record counts grouped by location; they are not a population estimate or scientific pollution measure. The attributed collector (`collected_by`) and record author (`created_by`) are distinct so an admin can enter a record for a member without claiming to have collected it.
 

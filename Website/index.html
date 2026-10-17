@@ -71,12 +71,15 @@
                 <article class="card"><h3>Review Records</h3><p>Members can flag an entry invalid or request completion. Admin approves the request or marks a selected record collected directly.</p></article>
                 <article class="card"><h3>Search Records</h3><p>The search box narrows the records available to the signed-in role.</p></article>
                 <article class="card"><h3>Generate Reports</h3><p>Completed collections are summarized by member, category, actual area, and date range.</p></article>
+                <article class="card"><h3>Join Clean CET</h3><p>New members submit their name, date of birth, CET register number, and department. The app creates an account and assigns an available area.</p></article>
             </div>
         </section>
 
         <section class="section" id="roles">
             <h2>Login, Roles, And Reporting</h2>
-            <p>The current desktop build starts at a login screen. A member can add and update their own pending records, flag them invalid, request collection approval, and view only their personal contribution. The admin can review all entries, approve or reject requests, mark selected records collected directly, delete them, and view overall, individual-member, and area reports.</p>
+            <p>The current desktop build starts at a login screen with Sign in and Join Clean CET actions. New members enter their name, date of birth, CET register number, and department. Their lowercase first name becomes the username; after the account is created, the app randomly assigns an available location and displays the requested username_clean password before opening their member workspace. Duplicate usernames and register numbers are rejected.</p>
+            <p>The admin can open a Member directory to search profiles and see DOB, CET register number, department, assigned area, and account status. Passwords are never shown there or stored as plaintext. The requested password pattern is predictable and is only appropriate for this classroom project.</p>
+            <p>A member can add and update their own pending records, flag them invalid, request completion approval, and view only their personal contribution. The admin can review all entries, approve or reject requests, mark selected records collected directly, delete them, and view overall, individual-member, and area reports.</p>
             <div class="grid three">
                 <article class="card"><h3>Approval gate</h3><p>A member request remains pending until admin approval. Only completed records count in reports; rejected requests remain editable and can be resubmitted.</p></article>
                 <article class="card"><h3>Assigned and bonus</h3><p>Actual collection at a different location from a member's assigned territory appears as bonus in their personal report. Area totals follow the actual location.</p></article>
@@ -121,12 +124,15 @@
 ├── src
 │   ├── model
 │   │   ├── Waste.java
+│   │   ├── AppUser.java
+│   │   └── RegistrationResult.java
 │   │   ├── OrganicWaste.java
 │   │   ├── RecyclableWaste.java
 │   │   └── HazardousWaste.java
 │   ├── dao
 │   │   ├── DatabaseManager.java
 │   │   ├── AuthenticationManager.java
+│   │   ├── UserManager.java
 │   │   ├── PasswordHasher.java
 │   │   ├── WasteManager.java
 │   │   ├── ReportManager.java

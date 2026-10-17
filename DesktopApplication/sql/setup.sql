@@ -11,7 +11,18 @@ CREATE TABLE IF NOT EXISTS app_users (
     role VARCHAR(10) NOT NULL,
     password_salt CHAR(32) NOT NULL,
     password_hash CHAR(64) NOT NULL,
+    date_of_birth DATE NULL,
+    register_number VARCHAR(20) NULL,
+    department VARCHAR(80) NULL,
+    UNIQUE INDEX uq_app_users_register_number (register_number),
     active BOOLEAN NOT NULL DEFAULT TRUE
+);
+
+CREATE TABLE IF NOT EXISTS registration_areas (
+    area_name VARCHAR(100) PRIMARY KEY,
+    assigned_username VARCHAR(40) UNIQUE NULL,
+    CONSTRAINT fk_registration_area_user FOREIGN KEY (assigned_username)
+        REFERENCES app_users(username) ON DELETE SET NULL
 );
 
 CREATE TABLE IF NOT EXISTS waste (
@@ -69,6 +80,23 @@ CREATE TABLE IF NOT EXISTS completion_requests (
     CONSTRAINT fk_completion_reviewer FOREIGN KEY (reviewed_by)
         REFERENCES app_users(username)
 );
+
+INSERT IGNORE INTO registration_areas (area_name) VALUES
+    ('Industrial department front'),
+    ('EC department front'),
+    ('Rohith square'),
+    ('Sargam stage'),
+    ('Library front'),
+    ('Ohm''s villa'),
+    ('Industrial base'),
+    ('College ground'),
+    ('Research block'),
+    ('Old EC department'),
+    ('Hydraulics lab front'),
+    ('Back gate'),
+    ('Mh front'),
+    ('Lh front'),
+    ('Flag post');
 
 -- Application startup adds missing columns to an older waste table and seeds
 -- the administrator/member accounts without replacing existing records.

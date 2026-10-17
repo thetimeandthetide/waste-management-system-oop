@@ -23,9 +23,13 @@ then ./run.sh (or build.bat then run.bat on Windows) to load the latest classes
 and button styling. An IDE may launch a different output folder or leave an
 already-running window on the previous version.
 
-On first launch the app creates waste_management_db, app_users, waste,
-announcements, announcement_reads and completion_requests, applies safe additive
-schema migrations, and seeds the 13 member accounts plus one admin.
+On first launch the app creates waste_management_db, app_users, registration_areas,
+waste, announcements, announcement_reads and completion_requests, applies safe
+additive schema migrations, and seeds the 13 original member accounts plus one
+admin. New members can use Join Clean CET on the login screen; registration
+stores their date of birth, CET register number, department, and randomly
+assigned area. The admin's Member directory shows these profile details.
+Existing seeded members have no registration profile unless updated separately.
 The default MySQL settings are localhost:3306, database waste_management_db,
 username root, and an empty password. Set environment variables before launch
 to override them: WASTE_DB_SERVER, WASTE_DB_NAME, WASTE_DB_USER, WASTE_DB_PASSWORD.
@@ -49,6 +53,8 @@ SHOW TABLES;
 DESCRIBE waste;
 SELECT * FROM waste ORDER BY collected_at DESC;
 SELECT username, display_name, assigned_area, role FROM app_users;
+SELECT display_name, date_of_birth, register_number, department, assigned_area FROM app_users WHERE role='USER';
+SELECT area_name, assigned_username FROM registration_areas ORDER BY area_name;
 
 Members can submit a completion request for their pending record. The admin
 approval queue refreshes its count every 15 seconds; approving marks the record

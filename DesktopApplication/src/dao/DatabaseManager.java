@@ -30,6 +30,11 @@ public class DatabaseManager {
             {"merin", "Merin", "CGPU hall"},
             {"shyam", "Shyam", "CETAA hall"}
     };
+    private static final String[] REGISTRATION_AREAS = {
+            "Industrial department front", "EC department front", "Rohith square", "Sargam stage",
+            "Library front", "Ohm's villa", "Industrial base", "College ground", "Research block",
+            "Old EC department", "Hydraulics lab front", "Back gate", "Mh front", "Lh front", "Flag post"
+    };
 
     private static String setting(String name, String fallback) {
         String value = System.getProperty(name);
@@ -50,7 +55,9 @@ public class DatabaseManager {
 
         createTables();
         migrateWasteTable();
+        migrateUserTable();
         seedAccounts();
+        seedRegistrationAreas();
     }
 
     private static void createTables() throws SQLException {
@@ -58,8 +65,13 @@ public class DatabaseManager {
                 + "username VARCHAR(40) PRIMARY KEY, display_name VARCHAR(100) NOT NULL, "
                 + "assigned_area VARCHAR(100), role VARCHAR(10) NOT NULL, "
                 + "password_salt CHAR(32) NOT NULL, password_hash CHAR(64) NOT NULL, "
+                + "date_of_birth DATE NULL, register_number VARCHAR(20) NULL, department VARCHAR(80) NULL, "
                 + "active BOOLEAN NOT NULL DEFAULT TRUE, "
                 + "CHECK (role IN ('ADMIN','USER'))) ENGINE=InnoDB";
+        String registrationAreasSql = "CREATE TABLE IF NOT EXISTS registration_areas ("
+                + "area_name VARCHAR(100) PRIMARY KEY, assigned_username VARCHAR(40) UNIQUE NULL, "
+                + "CONSTRAINT fk_registration_area_user FOREIGN KEY (assigned_username) "
+                + "REFERENCES app_users(username) ON DELETE SET NULL) ENGINE=InnoDB";
         String wasteSql = "CREATE TABLE IF NOT EXISTS waste ("
                 + "id INT AUTO_INCREMENT PRIMARY KEY, waste_type VARCHAR(30) NOT NULL, "
                 + "description VARCHAR(255) NOT NULL, quantity DECIMAL(10,2) NOT NULL, "
@@ -97,10 +109,51 @@ public class DatabaseManager {
                 + "INDEX idx_completion_status_requested (request_status, requested_at)) ENGINE=InnoDB";
         try (Connection connection = getConnection(); Statement statement = connection.createStatement()) {
             statement.executeUpdate(usersSql);
+            statement.executeUpdate(registrationAreasSql);
             statement.executeUpdate(wasteSql);
             statement.executeUpdate(announcementSql);
             statement.executeUpdate(readSql);
             statement.executeUpdate(completionSql);
+        }
+    }
+
+    private static void migrateUserTable() throws SQLException {
+        addUserColumnIfMissing("date_of_birth", "DATE NULL");
+        addUserColumnIfMissing("register_number", "VARCHAR(20) NULL");
+        addUserColumnIfMissing("department", "VARCHAR(80) NULL");
+        try (Connection connection = getConnection();
+             ResultSet indexes = connection.getMetaData().getIndexInfo(connection.getCatalog(), null,
+                     "app_users", true, false)) {
+            while (indexes.next()) {
+                if ("uq_app_users_register_number".equalsIgnoreCase(indexes.getString("INDEX_NAME"))) return;
+            }
+        }
+        try (Connection connection = getConnection(); Statement statement = connection.createStatement()) {
+            statement.executeUpdate("CREATE UNIQUE INDEX uq_app_users_register_number ON app_users (register_number)");
+        }
+    }
+
+    private static void addUserColumnIfMissing(String column, String definition) throws SQLException {
+        try (Connection connection = getConnection()) {
+            DatabaseMetaData metadata = connection.getMetaData();
+            try (ResultSet columns = metadata.getColumns(connection.getCatalog(), null, "app_users", column)) {
+                if (columns.next()) return;
+            }
+            try (Statement statement = connection.createStatement()) {
+                statement.executeUpdate("ALTER TABLE app_users ADD COLUMN " + column + " " + definition);
+            }
+        }
+    }
+
+    private static void seedRegistrationAreas() throws SQLException {
+        try (Connection connection = getConnection();
+             PreparedStatement statement = connection.prepareStatement(
+                     "INSERT IGNORE INTO registration_areas (area_name) VALUES (?)")) {
+            for (String area : REGISTRATION_AREAS) {
+                statement.setString(1, area);
+                statement.addBatch();
+            }
+            statement.executeBatch();
         }
     }
 

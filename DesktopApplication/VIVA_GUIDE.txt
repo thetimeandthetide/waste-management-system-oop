@@ -8,7 +8,10 @@ to MySQL. For the full source-by-source walkthrough, read
 CODE_STUDY_PACK.md and ROLE_REPORTS_VIVA_ADDENDUM.md.
 
 IMPORTANT CURRENT BEHAVIOR
-- Roles: 13 members and one admin.
+- Initial accounts: 13 seeded members and one admin; new members can also self-register.
+- New members use Join Clean CET to enter their name, DOB, CET register number, and department. The lowercase first name becomes the username, and an unused area is assigned randomly.
+- The generated username_clean password is shown after registration and stored only as a salted PBKDF2 hash. It is predictable and suitable only for this classroom project.
+- The admin-only Member directory shows member profile fields and assigned areas. The admin can add more registration areas as CET locations are identified.
 - Members can add records, update their own pending records, request completion
   approval, and mark their own pending records invalid. They cannot complete or
   delete records.
@@ -61,6 +64,7 @@ SHORT PRESENTATION FLOW
 DEMO SAFETY
 - Use throwaway test rows; deleting a record is permanent.
 - Do not show passwords on the recording.
+- DOB and student register numbers are personal data. Use test profiles or obtain consent before recording; register numbers are format-checked, not verified against a CET registry.
 - The default DB is localhost on each machine. Team-wide data sharing requires
   every installation to point at one secured shared MySQL server.
 - Weight/category reports are not a measured pollution index.
