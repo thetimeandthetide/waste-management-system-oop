@@ -1,87 +1,56 @@
-Waste Management System - Viva and Demo Guide
-=============================================
+WASTE MANAGEMENT SYSTEM - VIVA QUICK GUIDE
+==========================================
 
-Very Short Project Explanation
-------------------------------
-This is a Java desktop application made using Swing. It stores waste collection
-records in a MySQL database using JDBC. The user can add, view, update, delete,
-search, and mark waste records as collected.
+The current implementation is a Java Swing desktop application. Main initializes
+MySQL, LoginFrame authenticates a user, and WasteManagementGUI shows role-filtered
+record and report workspaces. JDBC and MySQL Connector/J connect the Java managers
+to MySQL. For the full source-by-source walkthrough, read
+CODE_STUDY_PACK.md and ROLE_REPORTS_VIVA_ADDENDUM.md.
 
-OOP Concepts Used
------------------
-1. Classes and Objects
-   Waste, OrganicWaste, RecyclableWaste, HazardousWaste, WasteManager, and
-   WasteManagementGUI are classes. Objects are created when adding records.
+IMPORTANT CURRENT BEHAVIOR
+- Roles: 13 members and one admin.
+- Members can add records, update their own pending records, and mark their own
+  pending records invalid. They cannot complete or delete records.
+- Admin can view all records, add records for members, update pending records,
+  complete records, invalidate records, and delete records after confirmation.
+- Each record includes type, description, kg, actual location, and collection time.
+- Reports are calculated from COMPLETED records. Pending/invalid rows are not
+  included.
+- Member reports show only their own contribution. Admin reports show total,
+  member/category breakdown, area/category breakdown, date filtering, chart, and
+  CSV export.
+- A member's collection outside their assigned area is shown as their bonus
+  contribution. Area totals follow the actual collection location.
+- Reports are computed from the waste table; there is no separate report table
+  per person, so totals stay in sync with the source records.
 
-2. Encapsulation
-   Waste has private fields like id, description, quantity, location, and status.
-   These fields are accessed using getters and setters.
+OOP EXPLANATION
+1. Classes/objects: Waste subclasses model collection records; AppUser models the
+   signed-in identity; managers and GUI are separate objects.
+2. Encapsulation: model fields are private and accessed with getters/setters.
+3. Abstraction: Waste is abstract and declares getWasteCategory().
+4. Inheritance: OrganicWaste, RecyclableWaste, HazardousWaste extend Waste.
+5. Polymorphism: each subclass returns its own category through the same method.
+6. Exception handling: database and parsing errors are caught and reported.
+7. Packages: model, dao, gui, and main divide responsibilities.
+8. Swing events: button ActionListeners call handlers and refresh visible data.
 
-3. Abstraction
-   Waste is an abstract class. It has the abstract method getWasteCategory().
+SHORT PRESENTATION FLOW
+1. Introduce the problem and explain that this is a desktop tool, not a website.
+2. Explain the flow: Main -> DatabaseManager -> LoginFrame -> role-aware GUI ->
+   manager/DAO -> JDBC -> MySQL.
+3. Show a member view and explain limited access.
+4. Add a dated record; show how actual area and assigned territory determine
+   assigned vs bonus contribution.
+5. Explain invalid vs completed and why only completed entries count in reports.
+6. Sign in as admin and show overall, individual, and area reports plus CSV.
+7. Show SQL data if time permits; close with limitations and next steps.
 
-4. Inheritance
-   OrganicWaste, RecyclableWaste, and HazardousWaste extend Waste.
-
-5. Polymorphism
-   getWasteCategory() is overridden in each child class. The same method name
-   gives different results: Organic, Recyclable, or Hazardous.
-
-6. Exception Handling
-   try-catch blocks handle database errors and invalid quantity input.
-
-7. Packages
-   model, dao, gui, and main packages organize the project.
-
-8. Swing Event Handling
-   Button click listeners call methods like addWaste(), updateWaste(), and
-   deleteWaste().
-
-2-5 Minute Demo Script
-----------------------
-1. "This is my Waste Management System, a Java Swing desktop application."
-2. "The backend is MySQL, and Java connects to it using JDBC."
-3. "The table shows existing waste records loaded from the database."
-4. "I will add a new record by selecting a waste type, entering description,
-   quantity, location, and status, then clicking Add."
-5. "Now I can search for a record using a keyword such as Plastic or Lab."
-6. "When I click a table row, the form is filled automatically."
-7. "I can update the selected record and save changes."
-8. "I can mark a selected record as Collected."
-9. "I can also delete a selected record."
-10. "The OOP part is in the model package. Waste is abstract, and the three child
-    classes override getWasteCategory(), showing polymorphism."
-
-Test Cases
-----------
-1. Add Organic Waste
-   Input: Organic, Vegetable peels, 5, Hostel, Pending
-   Expected: New row appears in the table with type Organic.
-
-2. View All Waste
-   Input: Click View All
-   Expected: All records from the MySQL waste table are shown.
-
-3. Search Waste
-   Input: Search text "Plastic"
-   Expected: Only matching records such as Plastic bottles are displayed.
-
-4. Update Waste
-   Input: Select a row, change quantity to 10, click Update
-   Expected: Selected record quantity changes to 10.
-
-5. Mark Collected
-   Input: Select a Pending record, click Mark Collected
-   Expected: Status changes to Collected.
-
-6. Delete Waste
-   Input: Select a row, click Delete
-   Expected: Selected record is removed from table and database.
-
-7. Invalid Quantity
-   Input: Enter quantity "abc", click Add
-   Expected: Error message says quantity must be a valid number.
-
-8. Empty Search
-   Input: Leave search blank, click Search
-   Expected: All records are displayed because blank matches all text.
+DEMO SAFETY
+- Use throwaway test rows; deleting a record is permanent.
+- Do not show passwords on the recording.
+- The default DB is localhost on each machine. Team-wide data sharing requires
+  every installation to point at one secured shared MySQL server.
+- Weight/category reports are not a measured pollution index.
+- The desktop client has application-layer role checks; a production deployment
+  needs centralized authorization and protected server credentials.

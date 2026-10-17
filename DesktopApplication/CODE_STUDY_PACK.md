@@ -1,5 +1,7 @@
 # Waste Management System Code Study Pack
 
+> Update notice: the original notes below describe the first CRUD-only version. The current application adds login, roles, collected timestamps, invalid/completed states, reports, and CSV export. Use [ROLE_REPORTS_VIVA_ADDENDUM.md](ROLE_REPORTS_VIVA_ADDENDUM.md) as the source of truth for these new files and behaviors; some older GUI/database details below no longer match the current source.
+
 Use this document for tomorrow's presentation and viva. It follows the same flow as your PPT: idea, design, OOP, database, Swing GUI, implementation, and run commands.
 
 ## 1. One-Minute Project Explanation

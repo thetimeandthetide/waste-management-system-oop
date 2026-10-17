@@ -1,6 +1,7 @@
 package dao;
 
 import java.sql.Connection;
+import java.sql.DatabaseMetaData;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -8,77 +9,148 @@ import java.sql.SQLException;
 import java.sql.Statement;
 
 public class DatabaseManager {
-    private static final String SERVER_URL = "jdbc:mysql://localhost:3306/";
-    private static final String DATABASE_NAME = "waste_management_db";
+    private static final String SERVER_URL = setting("WASTE_DB_SERVER", "jdbc:mysql://localhost:3306/");
+    private static final String DATABASE_NAME = setting("WASTE_DB_NAME", "waste_management_db");
     private static final String DATABASE_URL = SERVER_URL + DATABASE_NAME;
-    private static final String USERNAME = "root";
-    private static final String PASSWORD = "";
+    private static final String USERNAME = setting("WASTE_DB_USER", "root");
+    private static final String PASSWORD = setting("WASTE_DB_PASSWORD", "");
+
+    private static final String[][] MEMBERS = {
+            {"aman", "Aman Fayad", "Civil canteen"},
+            {"joseph", "Joseph Fidel", "Mech front"},
+            {"nivedya", "Nivedya", "Dhwani"},
+            {"ayshwaria", "Ayshwaria", "Gazebo"},
+            {"nida", "Nida", "CS front"},
+            {"arya", "Arya", "Golden walkway"},
+            {"ahban", "Ahban", "Electrical gate"},
+            {"sidharth", "Sidharth", "Indoor court"},
+            {"heera", "Heera", "Archie corner"},
+            {"keerthana", "Keerthana", "College front"},
+            {"farzeen", "Farzeen", "DJ hall"},
+            {"merin", "Merin", "CGPU hall"},
+            {"shyam", "Shyam", "CETAA hall"}
+    };
+
+    private static String setting(String name, String fallback) {
+        String value = System.getProperty(name);
+        if (value == null || value.trim().isEmpty()) value = System.getenv(name);
+        return value == null || value.trim().isEmpty() ? fallback : value.trim();
+    }
 
     public static Connection getConnection() throws SQLException {
         return DriverManager.getConnection(DATABASE_URL, USERNAME, PASSWORD);
     }
 
     public static void initializeDatabase() throws SQLException {
-        createDatabaseIfNeeded();
-        createWasteTableIfNeeded();
-        insertStarterRecordsIfEmpty();
-    }
-
-    private static void createDatabaseIfNeeded() throws SQLException {
-        String sql = "CREATE DATABASE IF NOT EXISTS " + DATABASE_NAME;
-
         try (Connection connection = DriverManager.getConnection(SERVER_URL, USERNAME, PASSWORD);
              Statement statement = connection.createStatement()) {
+            statement.executeUpdate("CREATE DATABASE IF NOT EXISTS " + DATABASE_NAME
+                    + " CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
+        }
 
-            statement.executeUpdate(sql);
+        createTables();
+        migrateWasteTable();
+        seedAccounts();
+    }
+
+    private static void createTables() throws SQLException {
+        String usersSql = "CREATE TABLE IF NOT EXISTS app_users ("
+                + "username VARCHAR(40) PRIMARY KEY, display_name VARCHAR(100) NOT NULL, "
+                + "assigned_area VARCHAR(100), role VARCHAR(10) NOT NULL, "
+                + "password_salt CHAR(32) NOT NULL, password_hash CHAR(64) NOT NULL, "
+                + "active BOOLEAN NOT NULL DEFAULT TRUE, "
+                + "CHECK (role IN ('ADMIN','USER'))) ENGINE=InnoDB";
+        String wasteSql = "CREATE TABLE IF NOT EXISTS waste ("
+                + "id INT AUTO_INCREMENT PRIMARY KEY, waste_type VARCHAR(30) NOT NULL, "
+                + "description VARCHAR(255) NOT NULL, quantity DECIMAL(10,2) NOT NULL, "
+                + "location VARCHAR(100) NOT NULL, status VARCHAR(20) NOT NULL DEFAULT 'PENDING', "
+                + "created_by VARCHAR(40), collected_by VARCHAR(40), collected_at DATETIME NOT NULL, "
+                + "invalid_reason VARCHAR(255), created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP, "
+                + "updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, "
+                + "CONSTRAINT fk_waste_creator FOREIGN KEY (created_by) REFERENCES app_users(username), "
+                + "CONSTRAINT fk_waste_collector FOREIGN KEY (collected_by) REFERENCES app_users(username), "
+                + "CHECK (waste_type IN ('Organic','Recyclable','Hazardous')), "
+                + "CHECK (status IN ('PENDING','COMPLETED','INVALID')), "
+                + "CHECK (quantity > 0)) ENGINE=InnoDB";
+        try (Connection connection = getConnection(); Statement statement = connection.createStatement()) {
+            statement.executeUpdate(usersSql);
+            statement.executeUpdate(wasteSql);
         }
     }
 
-    private static void createWasteTableIfNeeded() throws SQLException {
-        String sql = "CREATE TABLE IF NOT EXISTS waste ("
-                + "id INT AUTO_INCREMENT PRIMARY KEY, "
-                + "waste_type VARCHAR(50) NOT NULL, "
-                + "description VARCHAR(255) NOT NULL, "
-                + "quantity DOUBLE NOT NULL, "
-                + "location VARCHAR(100) NOT NULL, "
-                + "status VARCHAR(50) NOT NULL"
-                + ")";
+    private static void migrateWasteTable() throws SQLException {
+        addColumnIfMissing("created_by", "VARCHAR(40) NULL");
+        addColumnIfMissing("collected_by", "VARCHAR(40) NULL");
+        addColumnIfMissing("collected_at", "DATETIME NULL");
+        addColumnIfMissing("invalid_reason", "VARCHAR(255) NULL");
+        addColumnIfMissing("created_at", "TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP");
+        addColumnIfMissing("updated_at", "TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP");
 
-        try (Connection connection = getConnection();
-             Statement statement = connection.createStatement()) {
-
-            statement.executeUpdate(sql);
+        try (Connection connection = getConnection(); Statement statement = connection.createStatement()) {
+            statement.executeUpdate("UPDATE waste SET collected_at = COALESCE(collected_at, created_at, CURRENT_TIMESTAMP)");
+            statement.executeUpdate("UPDATE waste SET status = CASE "
+                    + "WHEN UPPER(status) IN ('COLLECTED','COMPLETED') THEN 'COMPLETED' "
+                    + "WHEN UPPER(status) = 'INVALID' THEN 'INVALID' ELSE 'PENDING' END");
         }
     }
 
-    private static void insertStarterRecordsIfEmpty() throws SQLException {
-        String countSql = "SELECT COUNT(*) FROM waste";
-        String insertSql = "INSERT INTO waste (waste_type, description, quantity, location, status) VALUES (?, ?, ?, ?, ?)";
+    private static void addColumnIfMissing(String column, String definition) throws SQLException {
+        try (Connection connection = getConnection()) {
+            DatabaseMetaData metadata = connection.getMetaData();
+            try (ResultSet columns = metadata.getColumns(connection.getCatalog(), null, "waste", column)) {
+                if (columns.next()) return;
+            }
+            try (Statement statement = connection.createStatement()) {
+                statement.executeUpdate("ALTER TABLE waste ADD COLUMN " + column + " " + definition);
+            }
+        }
+    }
 
-        try (Connection connection = getConnection();
-             Statement countStatement = connection.createStatement();
-             ResultSet resultSet = countStatement.executeQuery(countSql)) {
-
-            resultSet.next();
-            if (resultSet.getInt(1) > 0) {
-                return;
+    private static void seedAccounts() throws SQLException {
+        String sql = "INSERT IGNORE INTO app_users "
+                + "(username, display_name, assigned_area, role, password_salt, password_hash) VALUES (?, ?, ?, ?, ?, ?)";
+        try (Connection connection = getConnection(); PreparedStatement statement = connection.prepareStatement(sql)) {
+            if (!accountExists(connection, "deepthirani")) {
+                String initialAdminPassword = setting("WASTE_ADMIN_INITIAL_PASSWORD", null);
+                if (initialAdminPassword == null) {
+                    throw new SQLException("Set WASTE_ADMIN_INITIAL_PASSWORD before the first application launch.");
+                }
+                String adminSalt = PasswordHasher.newSalt();
+                char[] adminPassword = initialAdminPassword.toCharArray();
+                String adminHash = PasswordHasher.hash(adminPassword, adminSalt);
+                java.util.Arrays.fill(adminPassword, '\0');
+                statement.setString(1, "deepthirani");
+                statement.setString(2, "Deepthi Rani");
+                statement.setString(3, null);
+                statement.setString(4, "ADMIN");
+                statement.setString(5, adminSalt);
+                statement.setString(6, adminHash);
+                statement.executeUpdate();
             }
 
-            try (PreparedStatement insertStatement = connection.prepareStatement(insertSql)) {
-                insertStarterRecord(insertStatement, "Organic", "Food waste from cafeteria", 12.5, "College Canteen", "Pending");
-                insertStarterRecord(insertStatement, "Recyclable", "Plastic bottles", 8.0, "Block A", "Pending");
-                insertStarterRecord(insertStatement, "Hazardous", "Used batteries", 3.0, "Lab Room 2", "Collected");
+            for (String[] member : MEMBERS) {
+                if (accountExists(connection, member[0])) continue;
+                String salt = PasswordHasher.newSalt();
+                char[] initialPassword = (member[0] + "_clean").toCharArray();
+                String hash = PasswordHasher.hash(initialPassword, salt);
+                java.util.Arrays.fill(initialPassword, '\0');
+                statement.setString(1, member[0]);
+                statement.setString(2, member[1]);
+                statement.setString(3, member[2]);
+                statement.setString(4, "USER");
+                statement.setString(5, salt);
+                statement.setString(6, hash);
+                statement.executeUpdate();
             }
         }
     }
 
-    private static void insertStarterRecord(PreparedStatement statement, String type, String description,
-                                            double quantity, String location, String status) throws SQLException {
-        statement.setString(1, type);
-        statement.setString(2, description);
-        statement.setDouble(3, quantity);
-        statement.setString(4, location);
-        statement.setString(5, status);
-        statement.executeUpdate();
+    private static boolean accountExists(Connection connection, String username) throws SQLException {
+        try (PreparedStatement statement = connection.prepareStatement("SELECT 1 FROM app_users WHERE username=?")) {
+            statement.setString(1, username);
+            try (ResultSet rows = statement.executeQuery()) {
+                return rows.next();
+            }
+        }
     }
 }

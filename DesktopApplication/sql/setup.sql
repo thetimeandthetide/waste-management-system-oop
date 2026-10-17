@@ -1,19 +1,36 @@
-DROP DATABASE IF EXISTS waste_management_db;
-CREATE DATABASE waste_management_db;
+-- Non-destructive schema setup. Existing databases and records are preserved.
+CREATE DATABASE IF NOT EXISTS waste_management_db
+    CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 USE waste_management_db;
 
-CREATE TABLE IF NOT EXISTS waste (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    waste_type VARCHAR(50) NOT NULL,
-    description VARCHAR(255) NOT NULL,
-    quantity DOUBLE NOT NULL,
-    location VARCHAR(100) NOT NULL,
-    status VARCHAR(50) NOT NULL
+CREATE TABLE IF NOT EXISTS app_users (
+    username VARCHAR(40) PRIMARY KEY,
+    display_name VARCHAR(100) NOT NULL,
+    assigned_area VARCHAR(100),
+    role VARCHAR(10) NOT NULL,
+    password_salt CHAR(32) NOT NULL,
+    password_hash CHAR(64) NOT NULL,
+    active BOOLEAN NOT NULL DEFAULT TRUE
 );
 
-INSERT INTO waste (waste_type, description, quantity, location, status)
-VALUES
-('Organic', 'Food waste from cafeteria', 12.5, 'College Canteen', 'Pending'),
-('Recyclable', 'Plastic bottles', 8.0, 'Block A', 'Pending'),
-('Hazardous', 'Used batteries', 3.0, 'Lab Room 2', 'Collected');
+CREATE TABLE IF NOT EXISTS waste (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    waste_type VARCHAR(30) NOT NULL,
+    description VARCHAR(255) NOT NULL,
+    quantity DECIMAL(10,2) NOT NULL,
+    location VARCHAR(100) NOT NULL,
+    status VARCHAR(20) NOT NULL DEFAULT 'PENDING',
+    created_by VARCHAR(40),
+    collected_by VARCHAR(40),
+    collected_at DATETIME NOT NULL,
+    invalid_reason VARCHAR(255),
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_waste_report (status, collected_at),
+    INDEX idx_waste_collector (collected_by, status),
+    INDEX idx_waste_area (location, status)
+);
+
+-- Application startup adds missing columns to an older waste table and seeds
+-- the administrator/member accounts without replacing existing records.

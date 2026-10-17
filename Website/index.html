@@ -20,6 +20,7 @@
             <a href="#software">Software Used</a>
             <a href="#structure">Project Structure</a>
             <a href="#flow">How It Works</a>
+            <a href="#roles">Login &amp; Reports</a>
             <a href="#database">MySQL</a>
             <a href="#oop">OOP Concepts</a>
             <a href="#files">File Explanations</a>
@@ -37,8 +38,8 @@
                 <p class="eyebrow">Java Swing + MySQL + JDBC</p>
                 <h1>Waste Management System</h1>
                 <p class="hero-text">
-                    A beginner-friendly desktop application that stores waste records,
-                    displays them in a Swing table, and performs CRUD operations using MySQL.
+                    A role-based desktop application for logging, reviewing, and reporting
+                    waste collections with Java Swing and MySQL.
                 </p>
                 <div class="hero-actions">
                     <a href="#files" class="button primary">Study The Code</a>
@@ -51,12 +52,12 @@
                 <div class="mini-form">
                     <label>Waste Type</label><div>Organic</div>
                     <label>Description</label><div>Food waste</div>
-                    <label>Status</label><div class="pill">Pending</div>
+                    <label>Status</label><div class="pill">Pending review</div>
                 </div>
                 <div class="mini-table">
                     <span>ID</span><span>Type</span><span>Status</span>
                     <strong>1</strong><strong>Organic</strong><strong>Pending</strong>
-                    <strong>2</strong><strong>Recyclable</strong><strong>Collected</strong>
+                    <strong>2</strong><strong>Recyclable</strong><strong>Completed</strong>
                 </div>
             </div>
         </section>
@@ -67,10 +68,31 @@
                 <article class="card"><h3>Add Records</h3><p>User enters waste details and clicks Add. Java sends an INSERT query to MySQL.</p></article>
                 <article class="card"><h3>View Records</h3><p>The app reads all database rows and shows them in a JTable.</p></article>
                 <article class="card"><h3>Update Records</h3><p>Selecting a row fills the form. Edited values are saved with an UPDATE query.</p></article>
-                <article class="card"><h3>Delete Records</h3><p>The selected record ID is sent to a DELETE query.</p></article>
-                <article class="card"><h3>Search Records</h3><p>The search box filters records by description, location, type, or status.</p></article>
-                <article class="card"><h3>Mark Collected</h3><p>A selected record's status is changed to Collected.</p></article>
+                <article class="card"><h3>Review Records</h3><p>Members can flag their own entry invalid. Admin can complete or delete records.</p></article>
+                <article class="card"><h3>Search Records</h3><p>The search box narrows the records available to the signed-in role.</p></article>
+                <article class="card"><h3>Generate Reports</h3><p>Completed collections are summarized by member, category, actual area, and date range.</p></article>
             </div>
+        </section>
+
+        <section class="section" id="roles">
+            <h2>Login, Roles, And Reporting</h2>
+            <p>The current desktop build starts at a login screen. A member can add records, update their own pending records, flag their own pending records invalid, and view only their personal contribution. The admin can review all entries, mark them completed, delete them, and view overall, individual-member, and area reports.</p>
+            <div class="grid three">
+                <article class="card"><h3>Completed only</h3><p>Pending and invalid records are excluded. Admin completion is the review gate that makes a collection count in reports.</p></article>
+                <article class="card"><h3>Assigned and bonus</h3><p>Actual collection at a different location from a member's assigned territory appears as bonus in their personal report. Area totals follow the actual location.</p></article>
+                <article class="card"><h3>Live aggregation</h3><p>SQL aggregates the canonical waste records by date, category, member, and location. There are no separately maintained report tables to go stale.</p></article>
+            </div>
+            <div class="table-card">
+                <table>
+                    <thead><tr><th>Role</th><th>Can do</th><th>Report access</th></tr></thead>
+                    <tbody>
+                        <tr><td>Member</td><td>Add; update own pending entry; mark own pending entry invalid</td><td>Own contribution only</td></tr>
+                        <tr><td>Admin</td><td>Review all; add/assign; update, complete, invalidate, delete</td><td>Overall, each member, and each area</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <p><strong>Team data note:</strong> default MySQL is localhost on each computer, so teammates' separate installs do not sync. Shared records require all installs to be configured for one secured, reachable MySQL host. The weight charts report recorded kilograms, not a scientifically measured pollution score.</p>
+            <p><a href="code-walkthrough.html#current-build">Read the current implementation walkthrough and Q&amp;A</a>.</p>
         </section>
 
         <section class="section" id="software">
@@ -104,8 +126,12 @@
 │   │   └── HazardousWaste.java
 │   ├── dao
 │   │   ├── DatabaseManager.java
-│   │   └── WasteManager.java
+│   │   ├── AuthenticationManager.java
+│   │   ├── PasswordHasher.java
+│   │   ├── WasteManager.java
+│   │   └── ReportManager.java
 │   ├── gui
+│   │   ├── LoginFrame.java
 │   │   └── WasteManagementGUI.java
 │   └── main
 │       └── Main.java
@@ -130,22 +156,22 @@
                 <span>→</span>
                 <div>DatabaseManager<br><small>creates DB/table</small></div>
                 <span>→</span>
-                <div>WasteManagementGUI<br><small>shows form/table</small></div>
+                <div>LoginFrame<br><small>authenticates account</small></div>
                 <span>→</span>
-                <div>WasteManager<br><small>runs SQL</small></div>
+                <div>Managers / DAO<br><small>role checks + SQL</small></div>
                 <span>→</span>
                 <div>MySQL<br><small>stores data</small></div>
             </div>
             <p class="plain">
-                When the app starts, it first checks MySQL. If the database or table does not exist,
-                it creates them. Then the Swing window opens. Button clicks call Java methods, and
-                those methods call SQL queries through JDBC.
+                Startup checks/migrates MySQL, then opens the Swing login. Successful authentication
+                opens a role-aware dashboard. Button events call GUI handlers, manager/DAO methods,
+                and parameterized JDBC queries.
             </p>
         </section>
 
         <section class="section" id="database">
             <h2>MySQL Database Explanation</h2>
-            <p>The project uses one database and one table. This keeps the project short and easy to explain.</p>
+            <p>The database has an account table and a normalized waste-record table. Reports are calculated from waste records instead of saved in duplicate per-user tables.</p>
             <div class="code-grid">
                 <article class="code-card">
                     <h3>Database</h3>
@@ -154,8 +180,8 @@
                 </article>
                 <article class="code-card">
                     <h3>Table</h3>
-                    <pre><code>waste</code></pre>
-                    <p>This table stores individual waste records.</p>
+                    <pre><code>app_users + waste</code></pre>
+                    <p><code>app_users</code> stores accounts and roles; <code>waste</code> stores collection records.</p>
                 </article>
             </div>
             <div class="table-card">
@@ -167,7 +193,9 @@
                         <tr><td>description</td><td>VARCHAR(255)</td><td>Short explanation of the waste</td></tr>
                         <tr><td>quantity</td><td>DOUBLE</td><td>Amount of waste in kg</td></tr>
                         <tr><td>location</td><td>VARCHAR(100)</td><td>Where the waste is located</td></tr>
-                        <tr><td>status</td><td>VARCHAR(50)</td><td>Pending or Collected</td></tr>
+                        <tr><td>status</td><td>VARCHAR(20)</td><td>PENDING, COMPLETED, or INVALID</td></tr>
+                        <tr><td>collected_by</td><td>VARCHAR(40)</td><td>Member credited for the collection</td></tr>
+                        <tr><td>collected_at</td><td>DATETIME</td><td>When collection happened</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -178,7 +206,7 @@ USE waste_management_db;
 SHOW TABLES;
 DESCRIBE waste;
 SELECT * FROM waste;
-SELECT * FROM waste WHERE status = 'Collected';
+SELECT * FROM waste WHERE status = 'COMPLETED';
 exit;</code></pre>
         </section>
 
@@ -198,7 +226,7 @@ exit;</code></pre>
 
         <section class="section" id="files">
             <h2>Every File Explained</h2>
-            <p>Use this section for code-by-code viva preparation.</p>
+            <p>Use the <a href="code-walkthrough.html#current-build">current-build walkthrough</a> for accurate explanations of every added authentication and reporting file. The snippets below are historical explanations of the original classes and may not show the current method signatures or permissions.</p>
 
             <details open>
                 <summary>model/Waste.java</summary>

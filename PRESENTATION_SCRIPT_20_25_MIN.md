@@ -1,5 +1,7 @@
 # Waste Management System - 20-25 Minute Presentation Script
 
+> Implementation update: this script was originally drafted for the earlier CRUD-only build. The current app adds role-based login, timestamps, pending/completed/invalid states, member and area reports, bonus attribution, and CSV export. Before presenting any feature claims, use the current-source addendum at `DesktopApplication/ROLE_REPORTS_VIVA_ADDENDUM.md`. In particular, members cannot complete/delete records, only completed records count in reports, and the default database is local to each computer.
+
 Use this as a speaking script, not as text to read word-for-word from the slide. The best delivery is: look at the slide, speak the main idea confidently, then explain the technical part in your own voice.
 
 Team context:
@@ -829,6 +831,41 @@ A: Waste has private fields and public getters/setters.
 A: `getWasteCategory()` is overridden in each child class.
 
 ### Application Flow
+
+## Current Build: Technical Addendum For Q&A And Video
+
+Use this section to replace outdated claims in the original slide notes if the panel asks about the upgraded application.
+
+**Login and permissions:** `Main.main()` initializes the database, then schedules `LoginFrame` on Swing's Event Dispatch Thread. `LoginFrame` passes the entered username and password to `AuthenticationManager`. `PasswordHasher` verifies a salted PBKDF2 hash; the GUI receives an `AppUser` containing the role and assigned area. The user role is used by both the GUI and `WasteManager` to limit records and actions. Members may add, update their own pending entries, and flag their own pending entries invalid. Admin may review all records, complete, invalidate, or delete them. Deletion asks for confirmation.
+
+**One record's journey:** The form validates type, positive finite kilograms, description, actual location, and collection timestamp. `WasteManagementGUI` makes the correct `Waste` subclass and calls `WasteManager`. The manager uses a `PreparedStatement` to save values into `waste`, including `created_by`, `collected_by`, `collected_at`, and status. After a successful write, the GUI reloads records and reports. `created_by` identifies the account that entered it; `collected_by` identifies whose contribution receives credit.
+
+**Statuses and reports:** Pending records await admin review. Invalid records are retained for audit/administrative cleanup but excluded from reports. Completed records count in reports. `ReportManager` runs SQL aggregates for a selected date range: count and sum by waste type, collector, and actual area. User sees only their own summary; admin sees overall, all-member, and area-wise views. Reports are derived directly from canonical waste records, not separate per-user summary tables, so edits/status changes are reflected on the next refresh.
+
+**Assigned area versus bonus:** The user's assigned territory is on `app_users`. The waste row stores its actual location. The member's own report compares those locations; collection outside their assigned area is included as bonus, while the area report credits the place where collection happened. These are two different reporting dimensions, not duplicate physical waste.
+
+**Connectivity and sharing:** `DatabaseManager` reads `WASTE_DB_SERVER`, `WASTE_DB_NAME`, `WASTE_DB_USER`, and `WASTE_DB_PASSWORD`, then uses Connector/J through `DriverManager` and JDBC `Connection`. `PreparedStatement` binds data; `ResultSet` maps query results to Java objects. Default host is `localhost`, so installations on different laptops have separate data. Team sharing requires every client to use the same secured, reachable MySQL server. Do not claim cloud sync unless that shared server is actually configured.
+
+**Limitations worth stating confidently:** The report measures entered kilograms and category, not a verified pollution score. Member passwords follow the requested predictable initial convention, so this is a classroom prototype, not production identity management. Application-level role checks can be bypassed by someone with direct database credentials; production would move authorization behind a trusted service. Backup/restore, password reset, audit trail, and remote shared server provisioning are reasonable future improvements.
+
+### Video recording outline (about 4 minutes)
+
+1. Show the Swing login and identify it as the desktop app (20 sec).
+2. Sign in as a member; explain what they can see and add a dated, categorized test entry (60 sec).
+3. Show invalid status and the personal report's assigned/bonus/category totals (35 sec).
+4. Sign out, enter admin role, show overall, member, and area reports with date filters/chart/export (60 sec).
+5. Demonstrate completion on a disposable pending row and explain that this is what includes it in report totals (35 sec).
+6. Show the matching MySQL row and timestamp, then explain Swing -> DAO/manager -> JDBC -> MySQL and the local-vs-shared-host limitation (45 sec).
+
+### Likely follow-up answers
+
+- **Why no report table per user?** Aggregation keeps the waste table as the single source of truth and avoids stale duplicate totals.
+- **Why distinguish author and collector?** An admin can enter a record while crediting the member who actually collected it.
+- **Does invalid mean deleted?** No. It is retained with a reason/status; admin may delete it later.
+- **Who can complete a record?** Only admin. Completion is a review decision and report inclusion gate.
+- **How are SQL injection risks reduced?** Dynamic values are bound through `PreparedStatement` rather than concatenated into SQL.
+- **Do all teammates share data now?** Not with localhost defaults. All clients need a common secure MySQL server configuration.
+- **What does pollution in the chart mean?** The current charts show recorded waste mass by category/location, not a scientific pollution index.
 
 **Q: What happens when Add is clicked?**
 

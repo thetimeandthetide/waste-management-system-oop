@@ -1,42 +1,49 @@
-Waste Management System
-=======================
+WASTE MANAGEMENT SYSTEM - DESKTOP APPLICATION
+================================================
 
-Beginner-friendly Java Swing + MySQL OOP mini project.
-This is a full desktop project, not a web application.
+Native Java Swing desktop app. MySQL is the data store and JDBC is the connection layer.
 
-Packages:
-- model: OOP classes
-- dao: JDBC database classes
-- gui: Swing GUI
-- main: Application starting point
+REQUIREMENTS
+- Java 8 or newer (JDK needed to rebuild)
+- MySQL Server running
+- Bundled lib/mysql-connector-j.jar (already included)
 
-Default database configuration:
-- Database: waste_management_db
-- Username: root
-- Password: empty
-
-The application automatically creates the MySQL database and waste table
-when it starts, as long as MySQL is installed and running.
-
-Important files:
-- sql/setup.sql: Creates database/table and inserts sample records
-- src/dao/DatabaseManager.java: Change MySQL username/password here
-- build.sh: Compiles the project and creates a runnable JAR
-- run.sh: Runs the project
-- build.bat: Windows compile script
-- run.bat: Windows run script
-
-Mac/Linux:
-1. Make sure MySQL is running.
-2. ./build.sh
-3. ./run.sh
-
-Windows:
-1. Install MySQL and make sure it is running.
-2. Keep mysql-connector-j.jar inside lib.
-3. Run build.bat.
+RUN ON WINDOWS
+1. Install/start MySQL Server.
+2. Open Command Prompt in this DesktopApplication folder.
+3. Run build.bat (only needed to compile source or rebuild the JAR).
 4. Run run.bat.
 
-Optional manual database setup:
-- sql/setup.sql can still be imported in MySQL Workbench if your teacher asks
-  to see the SQL separately.
+RUN ON macOS/Linux
+1. Start MySQL Server.
+2. From this folder run ./build.sh and then ./run.sh.
+
+On first launch the app creates waste_management_db, app_users and waste, applies
+safe additive schema migrations, and seeds the 13 member accounts plus one admin.
+The default MySQL settings are localhost:3306, database waste_management_db,
+username root, and an empty password. Set environment variables before launch
+to override them: WASTE_DB_SERVER, WASTE_DB_NAME, WASTE_DB_USER, WASTE_DB_PASSWORD.
+Example Windows Command Prompt: set WASTE_DB_PASSWORD=your_mysql_password
+
+The default server is local to each computer. Separate teammate laptops will not
+share data unless they are configured to use the same reachable MySQL server.
+Do not place production database credentials in source control.
+
+The admin username is deepthirani. On the first launch against a new database,
+set WASTE_ADMIN_INITIAL_PASSWORD privately before starting the app; it is used
+once to create the salted PBKDF2 admin hash and is not needed after seeding.
+Member accounts use their lowercase first name and the requested classroom
+password convention. Passwords are stored as salted PBKDF2 hashes. Do not commit
+credentials or use these initial credentials for a production deployment.
+
+DATABASE INSPECTION
+mysql -u root -p
+USE waste_management_db;
+SHOW TABLES;
+DESCRIBE waste;
+SELECT * FROM waste ORDER BY collected_at DESC;
+SELECT username, display_name, assigned_area, role FROM app_users;
+
+Reports are calculated from completed rows in waste, not maintained in one table
+per user. The complete current implementation walkthrough and limitations are in
+ROLE_REPORTS_VIVA_ADDENDUM.md.

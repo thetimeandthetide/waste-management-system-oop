@@ -8,6 +8,10 @@ public abstract class Waste {
     private double quantity;
     private String location;
     private String status;
+    private String collectedBy;
+    private String createdBy;
+    private String collectedAt;
+    private String invalidReason;
 
     public Waste() {
     }
@@ -22,6 +26,15 @@ public abstract class Waste {
 
     // Polymorphism: each child class gives its own category.
     public abstract String getWasteCategory();
+
+    public String getCollectedBy() { return collectedBy; }
+    public void setCollectedBy(String collectedBy) { this.collectedBy = collectedBy; }
+    public String getCreatedBy() { return createdBy; }
+    public void setCreatedBy(String createdBy) { this.createdBy = createdBy; }
+    public String getCollectedAt() { return collectedAt; }
+    public void setCollectedAt(String collectedAt) { this.collectedAt = collectedAt; }
+    public String getInvalidReason() { return invalidReason; }
+    public void setInvalidReason(String invalidReason) { this.invalidReason = invalidReason; }
 
     public int getId() {
         return id;
