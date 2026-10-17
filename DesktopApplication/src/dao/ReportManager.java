@@ -5,10 +5,10 @@ import model.ReportRow;
 import model.ReportSummary;
 
 import java.sql.Connection;
-import java.sql.Date;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Timestamp;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
@@ -19,12 +19,11 @@ public class ReportManager {
                 + "COALESCE(SUM(CASE WHEN waste_type='Organic' THEN quantity ELSE 0 END),0), "
                 + "COALESCE(SUM(CASE WHEN waste_type='Recyclable' THEN quantity ELSE 0 END),0), "
                 + "COALESCE(SUM(CASE WHEN waste_type='Hazardous' THEN quantity ELSE 0 END),0), COUNT(*) "
-                + "FROM waste WHERE status='COMPLETED' AND DATE(collected_at) BETWEEN ? AND ?"
+                + "FROM waste WHERE status='COMPLETED' AND collected_at>=? AND collected_at<?"
                 + (user.isAdmin() ? "" : " AND collected_by=?");
         try (Connection connection = DatabaseManager.getConnection();
              PreparedStatement statement = connection.prepareStatement(sql)) {
-            statement.setDate(1, Date.valueOf(from));
-            statement.setDate(2, Date.valueOf(to));
+            bindDateRange(statement, from, to, 1);
             if (!user.isAdmin()) statement.setString(3, user.getUsername());
             try (ResultSet result = statement.executeQuery()) {
                 result.next();
@@ -45,12 +44,11 @@ public class ReportManager {
                 + "COALESCE(SUM(CASE WHEN LOWER(w.location)=LOWER(u.assigned_area) THEN w.quantity ELSE 0 END),0), "
                 + "COALESCE(SUM(CASE WHEN LOWER(w.location)<>LOWER(u.assigned_area) THEN w.quantity ELSE 0 END),0) "
                 + "FROM app_users u LEFT JOIN waste w ON w.collected_by=u.username AND w.status='COMPLETED' "
-                + "AND DATE(w.collected_at) BETWEEN ? AND ? WHERE u.username=? AND u.role='USER' "
+                + "AND w.collected_at>=? AND w.collected_at<? WHERE u.username=? AND u.role='USER' "
                 + "GROUP BY u.username,u.display_name";
         try (Connection connection = DatabaseManager.getConnection();
              PreparedStatement statement = connection.prepareStatement(sql)) {
-            statement.setDate(1, Date.valueOf(from));
-            statement.setDate(2, Date.valueOf(to));
+            bindDateRange(statement, from, to, 1);
             statement.setString(3, username);
             try (ResultSet result = statement.executeQuery()) {
                 if (!result.next()) throw new SQLException("User report was not found.");
@@ -70,12 +68,11 @@ public class ReportManager {
                 + "COALESCE(SUM(CASE WHEN LOWER(w.location)=LOWER(u.assigned_area) THEN w.quantity ELSE 0 END),0), "
                 + "COALESCE(SUM(CASE WHEN LOWER(w.location)<>LOWER(u.assigned_area) THEN w.quantity ELSE 0 END),0) "
                 + "FROM app_users u LEFT JOIN waste w ON w.collected_by=u.username AND w.status='COMPLETED' "
-                + "AND DATE(w.collected_at) BETWEEN ? AND ? WHERE u.role='USER' AND u.active=TRUE "
+                + "AND w.collected_at>=? AND w.collected_at<? WHERE u.role='USER' AND u.active=TRUE "
                 + "GROUP BY u.username,u.display_name ORDER BY u.display_name";
         try (Connection connection = DatabaseManager.getConnection();
              PreparedStatement statement = connection.prepareStatement(sql)) {
-            statement.setDate(1, Date.valueOf(from));
-            statement.setDate(2, Date.valueOf(to));
+            bindDateRange(statement, from, to, 1);
             try (ResultSet result = statement.executeQuery()) {
                 while (result.next()) reports.add(new ReportRow(result.getString(1), result.getDouble(2),
                         result.getDouble(3), result.getDouble(4), result.getInt(5),
@@ -92,12 +89,11 @@ public class ReportManager {
                 + "COALESCE(SUM(CASE WHEN waste_type='Organic' THEN quantity ELSE 0 END),0), "
                 + "COALESCE(SUM(CASE WHEN waste_type='Recyclable' THEN quantity ELSE 0 END),0), "
                 + "COALESCE(SUM(CASE WHEN waste_type='Hazardous' THEN quantity ELSE 0 END),0), COUNT(*) "
-                + "FROM waste WHERE status='COMPLETED' AND DATE(collected_at) BETWEEN ? AND ? "
+                + "FROM waste WHERE status='COMPLETED' AND collected_at>=? AND collected_at<? "
                 + "GROUP BY location ORDER BY SUM(quantity) DESC";
         try (Connection connection = DatabaseManager.getConnection();
              PreparedStatement statement = connection.prepareStatement(sql)) {
-            statement.setDate(1, Date.valueOf(from));
-            statement.setDate(2, Date.valueOf(to));
+            bindDateRange(statement, from, to, 1);
             try (ResultSet result = statement.executeQuery()) {
                 while (result.next()) reports.add(new ReportRow(result.getString(1), result.getDouble(2),
                         result.getDouble(3), result.getDouble(4), result.getInt(5), 0, 0));
@@ -108,5 +104,14 @@ public class ReportManager {
 
     private static void requireAdmin(AppUser actor) throws SQLException {
         if (!actor.isAdmin()) throw new SQLException("Only an administrator can view organization-wide reports.");
+    }
+
+    private static void bindDateRange(PreparedStatement statement, LocalDate from, LocalDate to, int firstIndex)
+            throws SQLException {
+        if (from == null || to == null || from.isAfter(to)) {
+            throw new IllegalArgumentException("A valid report date range is required.");
+        }
+        statement.setTimestamp(firstIndex, Timestamp.valueOf(from.atStartOfDay()));
+        statement.setTimestamp(firstIndex + 1, Timestamp.valueOf(to.plusDays(1).atStartOfDay()));
     }
 }

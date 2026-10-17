@@ -9,22 +9,27 @@ CODE_STUDY_PACK.md and ROLE_REPORTS_VIVA_ADDENDUM.md.
 
 IMPORTANT CURRENT BEHAVIOR
 - Roles: 13 members and one admin.
-- Members can add records, update their own pending records, and mark their own
-  pending records invalid. They cannot complete or delete records.
+- Members can add records, update their own pending records, request completion
+  approval, and mark their own pending records invalid. They cannot complete or
+  delete records.
 - Admin can view all records, add records for members, update pending records,
-  complete records, invalidate records, and delete records after confirmation.
+  approve or reject completion requests, mark records collected directly,
+  invalidate records, and delete records after confirmation.
 - Each record includes type, description, kg, actual location, and collection time.
-- Reports are calculated from COMPLETED records. Pending/invalid rows are not
-  included.
+- Reports are calculated from COMPLETED records. A member's request stays
+  pending until admin approval; pending/invalid rows are excluded.
 - Member reports show only their own contribution. Admin reports show total,
   member/category breakdown, area/category breakdown, date filtering, chart, and
   CSV export.
 - A member's collection outside their assigned area is shown as their bonus
   contribution. Area totals follow the actual collection location.
+- Area reports sum approved kilograms and count records by actual collection
+  location. They are not a population estimate or scientific pollution index.
 - Reports are computed from the waste table; there is no separate report table
   per person, so totals stay in sync with the source records.
 - Admin can broadcast announcements; members have an inbox and per-notice read
-  receipts. This is one-way messaging, not real-time push or two-way chat.
+  receipts. Completion requests use a separate approval queue whose count
+  refreshes every 15 seconds against the shared database.
 
 OOP EXPLANATION
 1. Classes/objects: Waste subclasses model collection records; AppUser models the
@@ -42,10 +47,13 @@ SHORT PRESENTATION FLOW
 2. Explain the flow: Main/SwingWorker -> DatabaseManager -> LoginFrame -> role-aware GUI ->
    manager/DAO -> JDBC -> MySQL.
 3. Show a member view and explain limited access.
-4. Add a dated record; show how actual area and assigned territory determine
-   assigned vs bonus contribution.
-5. Explain invalid vs completed and why only completed entries count in reports.
-6. Sign in as admin and show overall, individual, and area reports plus CSV.
+4. Add a dated record, update it, and request collection approval; show that it
+   remains pending and the admin queue displays it.
+5. Sign in as admin, approve it and show the status change; explain only
+   completed entries count in reports. Show the direct admin collection action.
+6. Show how actual area and assigned territory determine assigned vs bonus
+   contribution, then show overall, individual, and
+   area reports plus a CSV using the applied date range.
 7. Show the announcement inbox and a member read receipt.
 8. Show SQL data if time permits; close with limitations and next steps.
 

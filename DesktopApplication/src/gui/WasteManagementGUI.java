@@ -13,6 +13,7 @@ import javax.swing.BorderFactory;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JFileChooser;
+import javax.swing.filechooser.FileNameExtensionFilter;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JTextArea;
@@ -24,8 +25,10 @@ import javax.swing.JTable;
 import javax.swing.JTextField;
 import javax.swing.ListSelectionModel;
 import javax.swing.SwingConstants;
+import javax.swing.Timer;
 import javax.swing.border.EmptyBorder;
 import javax.swing.table.DefaultTableModel;
+import javax.swing.plaf.basic.BasicButtonUI;
 import java.awt.BorderLayout;
 import java.awt.CardLayout;
 import java.awt.Color;
@@ -33,6 +36,7 @@ import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.FlowLayout;
 import java.awt.GridLayout;
+import java.awt.Insets;
 import java.io.File;
 import java.io.BufferedWriter;
 import java.nio.charset.StandardCharsets;
@@ -63,13 +67,17 @@ public class WasteManagementGUI extends JFrame {
     private final WasteManager wasteManager = new WasteManager();
     private final ReportManager reportManager = new ReportManager();
     private final AnnouncementManager announcementManager = new AnnouncementManager();
+    private Timer approvalRefreshTimer;
     private final CardLayout pageLayout = new CardLayout();
     private final JPanel pageHost = new JPanel(pageLayout);
     private JButton announcementsNavigation;
+    private JButton completionRequestsNavigation;
     private JTable announcementsTable;
     private DefaultTableModel announcementsModel;
     private JTextArea announcementDetails;
     private List<Announcement> announcements = new ArrayList<>();
+    private JTable completionRequestsTable;
+    private DefaultTableModel completionRequestsModel;
 
     private JTextField descriptionField;
     private JTextField quantityField;
@@ -90,6 +98,7 @@ public class WasteManagementGUI extends JFrame {
     private JLabel recyclableValue;
     private JLabel hazardousValue;
     private JLabel recordCountValue;
+    private JLabel appliedRangeLabel;
     private JTable memberReportTable;
     private DefaultTableModel memberReportModel;
     private JTable areaReportTable;
@@ -99,6 +108,8 @@ public class WasteManagementGUI extends JFrame {
     private AreaChart areaChart;
     private List<ReportRow> currentMemberReports = new ArrayList<>();
     private List<ReportRow> currentAreaReports = new ArrayList<>();
+    private LocalDate appliedFrom;
+    private LocalDate appliedTo;
 
     public WasteManagementGUI(AppUser user) {
         this.user = user;
@@ -113,6 +124,7 @@ public class WasteManagementGUI extends JFrame {
         pageHost.add(createRecordsPage(), "records");
         pageHost.add(createReportsPage(), "reports");
         pageHost.add(createAnnouncementsPage(), "announcements");
+        if (user.isAdmin()) pageHost.add(createApprovalsPage(), "approvals");
         add(createSidebar(), BorderLayout.WEST);
         add(createTopBar(), BorderLayout.NORTH);
         add(pageHost, BorderLayout.CENTER);
@@ -120,6 +132,11 @@ public class WasteManagementGUI extends JFrame {
         refreshRecords();
         refreshReports();
         refreshAnnouncements();
+        refreshApprovalRequests();
+        if (user.isAdmin()) {
+            approvalRefreshTimer = new Timer(15000, event -> refreshApprovalCount());
+            approvalRefreshTimer.start();
+        }
     }
 
     private JPanel createSidebar() {
@@ -137,6 +154,7 @@ public class WasteManagementGUI extends JFrame {
         JButton records = navButton("Waste records");
         JButton reports = navButton(user.isAdmin() ? "Reports dashboard" : "My progress");
         announcementsNavigation = navButton("Announcements");
+        if (user.isAdmin()) completionRequestsNavigation = navButton("Collection approvals (0)");
         records.addActionListener(event -> pageLayout.show(pageHost, "records"));
         reports.addActionListener(event -> {
             refreshReports();
@@ -146,9 +164,14 @@ public class WasteManagementGUI extends JFrame {
             refreshAnnouncements();
             pageLayout.show(pageHost, "announcements");
         });
+        if (user.isAdmin()) completionRequestsNavigation.addActionListener(event -> {
+            refreshApprovalRequests();
+            pageLayout.show(pageHost, "approvals");
+        });
         navigation.add(records);
         navigation.add(reports);
         navigation.add(announcementsNavigation);
+        if (user.isAdmin()) navigation.add(completionRequestsNavigation);
 
         JLabel footer = new JLabel("Waste collection tracker", SwingConstants.CENTER);
         footer.setForeground(new Color(211, 205, 235));
@@ -161,6 +184,10 @@ public class WasteManagementGUI extends JFrame {
 
     private JButton navButton(String text) {
         JButton button = new JButton(text);
+        button.setUI(new BasicButtonUI());
+        button.setOpaque(true);
+        button.setContentAreaFilled(true);
+        button.setBorderPainted(false);
         button.setHorizontalAlignment(SwingConstants.LEFT);
         button.setForeground(Color.WHITE);
         button.setBackground(PURPLE);
@@ -194,6 +221,7 @@ public class WasteManagementGUI extends JFrame {
     }
 
     private void logout() {
+        if (approvalRefreshTimer != null) approvalRefreshTimer.stop();
         new LoginFrame().setVisible(true);
         dispose();
     }
@@ -288,12 +316,16 @@ public class WasteManagementGUI extends JFrame {
         actions.add(update);
         actions.add(invalid);
         if (user.isAdmin()) {
-            JButton complete = button("Mark completed", true);
+            JButton complete = button("Mark as collected", true);
             JButton delete = button("Delete selected", false);
             complete.addActionListener(event -> completeRecord());
             delete.addActionListener(event -> deleteRecord());
             actions.add(complete);
             actions.add(delete);
+        } else {
+            JButton request = button("Request approval", true);
+            request.addActionListener(event -> requestCompletion());
+            actions.add(request);
         }
         JButton clear = button("Clear", false);
         clear.addActionListener(event -> clearForm());
@@ -311,6 +343,36 @@ public class WasteManagementGUI extends JFrame {
         if (user.isAdmin()) reportContent.add(createAdminReports(), BorderLayout.CENTER);
         else reportContent.add(createPersonalReport(), BorderLayout.CENTER);
         page.add(reportContent, BorderLayout.CENTER);
+        return page;
+    }
+
+    private JPanel createApprovalsPage() {
+        JPanel page = pagePanel(new BorderLayout(16, 16));
+        JPanel heading = new JPanel(new BorderLayout(12, 0));
+        heading.setOpaque(false);
+        heading.add(heading("Collection approvals", "Member requests stay pending until an administrator approves them."), BorderLayout.WEST);
+        JButton refresh = button("Refresh requests", false);
+        refresh.addActionListener(event -> refreshApprovalRequests());
+        heading.add(refresh, BorderLayout.EAST);
+        page.add(heading, BorderLayout.NORTH);
+
+        JPanel panel = card(new BorderLayout(12, 12));
+        panel.add(sectionTitle("Waiting for review"), BorderLayout.NORTH);
+        completionRequestsModel = readOnlyModel(new String[]{"Request", "Record", "Type", "Description", "kg", "Actual area", "Collected at", "Requested by", "Requested at"});
+        completionRequestsTable = new JTable(completionRequestsModel);
+        styleTable(completionRequestsTable);
+        completionRequestsTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        panel.add(new JScrollPane(completionRequestsTable), BorderLayout.CENTER);
+        JPanel actions = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
+        actions.setOpaque(false);
+        JButton reject = button("Reject request", false);
+        JButton approve = button("Approve and mark collected", true);
+        reject.addActionListener(event -> rejectCompletionRequest());
+        approve.addActionListener(event -> approveCompletionRequest());
+        actions.add(reject);
+        actions.add(approve);
+        panel.add(actions, BorderLayout.SOUTH);
+        page.add(panel, BorderLayout.CENTER);
         return page;
     }
 
@@ -422,7 +484,7 @@ public class WasteManagementGUI extends JFrame {
         toField = input(new JTextField(LocalDate.now().toString()));
         JButton apply = button("Apply dates", true);
         JButton export = button("Export CSV", false);
-        apply.addActionListener(event -> refreshReports());
+        apply.addActionListener(event -> applyReportDates());
         export.addActionListener(event -> exportCurrentReport());
         filters.add(new JLabel("From date")); filters.add(new JLabel("To date"));
         filters.add(fromField); filters.add(toField);
@@ -432,6 +494,9 @@ public class WasteManagementGUI extends JFrame {
         JPanel buttons = new JPanel(new GridLayout(1, 2, 8, 0));
         buttons.setOpaque(false); buttons.add(apply); buttons.add(export);
         control.add(buttons, BorderLayout.EAST);
+        appliedRangeLabel = new JLabel("Applied range: not applied");
+        appliedRangeLabel.setForeground(MUTED);
+        control.add(appliedRangeLabel, BorderLayout.SOUTH);
         area.add(control, BorderLayout.EAST);
         return area;
     }
@@ -478,13 +543,13 @@ public class WasteManagementGUI extends JFrame {
         JPanel panel = new JPanel(new BorderLayout(12, 12));
         panel.setOpaque(false);
         JPanel chartPanel = card(new BorderLayout(8, 8));
-        chartPanel.add(sectionTitle("Area-wise collected weight"), BorderLayout.NORTH);
+        chartPanel.add(sectionTitle("Waste accumulation by actual area (kg)"), BorderLayout.NORTH);
         areaChart = new AreaChart();
         chartPanel.add(areaChart, BorderLayout.CENTER);
         chartPanel.setPreferredSize(new Dimension(270, 500));
 
         JPanel tableCard = card(new BorderLayout(10, 10));
-        tableCard.add(sectionTitle("Collection by actual area"), BorderLayout.NORTH);
+        tableCard.add(sectionTitle("Collected weight and record count by area"), BorderLayout.NORTH);
         areaReportModel = readOnlyModel(new String[]{"Area", "Total kg", "Organic kg", "Recyclable kg", "Hazardous kg", "Records"});
         areaReportTable = new JTable(areaReportModel);
         styleTable(areaReportTable);
@@ -529,7 +594,9 @@ public class WasteManagementGUI extends JFrame {
         try {
             Waste waste = wasteFromForm(0);
             wasteManager.addWaste(waste, user, selectedCollectorUsername());
-            showMessage("Waste record added. It will count toward reports after an administrator marks it completed.");
+            showMessage(user.isAdmin()
+                    ? "Waste record added as pending. Mark it collected or approve a member request to include it in reports."
+                    : "Waste record added as pending. Request collection approval after reviewing the record.");
             clearForm();
             refreshAll();
         } catch (IllegalArgumentException exception) {
@@ -562,6 +629,16 @@ public class WasteManagementGUI extends JFrame {
         } catch (SQLException exception) { showError(exception.getMessage()); }
     }
 
+    private void requestCompletion() {
+        if (selectedId < 0) { showError("Select one of your pending records first."); return; }
+        try {
+            wasteManager.requestCompletion(selectedId, user);
+            clearForm();
+            refreshAll();
+            showMessage("Completion request sent. The record will count in reports after admin approval.");
+        } catch (SQLException exception) { showError(exception.getMessage()); }
+    }
+
     private void completeRecord() {
         if (!user.isAdmin()) return;
         if (selectedId < 0) { showError("Select a pending record first."); return; }
@@ -569,6 +646,54 @@ public class WasteManagementGUI extends JFrame {
             wasteManager.markCompleted(selectedId, user);
             clearForm();
             refreshAll();
+            showMessage("Record marked as collected. Reports have been updated.");
+        } catch (SQLException exception) { showError(exception.getMessage()); }
+    }
+
+    private void refreshApprovalCount() {
+        if (!user.isAdmin() || completionRequestsNavigation == null) return;
+        try {
+            completionRequestsNavigation.setText("Collection approvals (" + wasteManager.getPendingCompletionRequestCount(user) + ")");
+        } catch (SQLException exception) {
+            completionRequestsNavigation.setToolTipText("Could not refresh approval count: " + exception.getMessage());
+        }
+    }
+
+    private void refreshApprovalRequests() {
+        if (!user.isAdmin() || completionRequestsModel == null) return;
+        try {
+            completionRequestsModel.setRowCount(0);
+            for (Object[] request : wasteManager.getPendingCompletionRequests(user)) completionRequestsModel.addRow(request);
+            refreshApprovalCount();
+        } catch (SQLException exception) { showError("Could not load collection approvals: " + exception.getMessage()); }
+    }
+
+    private Long selectedRequestId() {
+        int row = completionRequestsTable.getSelectedRow();
+        if (row < 0) {
+            showError("Select a completion request first.");
+            return null;
+        }
+        return ((Number) completionRequestsModel.getValueAt(completionRequestsTable.convertRowIndexToModel(row), 0)).longValue();
+    }
+
+    private void approveCompletionRequest() {
+        Long requestId = selectedRequestId();
+        if (requestId == null) return;
+        try {
+            wasteManager.approveCompletionRequest(requestId, user);
+            refreshAll();
+            showMessage("Request approved. The record is now marked collected and included in reports.");
+        } catch (SQLException exception) { showError(exception.getMessage()); }
+    }
+
+    private void rejectCompletionRequest() {
+        Long requestId = selectedRequestId();
+        if (requestId == null) return;
+        try {
+            wasteManager.rejectCompletionRequest(requestId, user);
+            refreshApprovalRequests();
+            showMessage("Request rejected. The waste record remains pending and can be corrected or resubmitted.");
         } catch (SQLException exception) { showError(exception.getMessage()); }
     }
 
@@ -643,6 +768,7 @@ public class WasteManagementGUI extends JFrame {
     private void refreshAll() {
         refreshRecords();
         refreshReports();
+        refreshApprovalRequests();
     }
 
     private void refreshRecords() {
@@ -651,38 +777,54 @@ public class WasteManagementGUI extends JFrame {
             recordsModel.setRowCount(0);
             for (Waste waste : wasteManager.getVisibleWaste(user, searchField == null ? "" : searchField.getText())) {
                 recordsModel.addRow(new Object[]{waste.getId(), waste.getWasteCategory(), waste.getDescription(),
-                        waste.getQuantity(), waste.getLocation(), waste.getCollectedAt(), waste.getCollectedBy(), waste.getStatus()});
+                        waste.getQuantity(), waste.getLocation(), waste.getCollectedAt(), waste.getCollectedBy(),
+                        displayStatus(waste)});
             }
         } catch (SQLException exception) { showError(exception.getMessage()); }
     }
 
     private void refreshReports() {
+        applyReportDates();
+    }
+
+    private void applyReportDates() {
         if (totalValue == null) return;
         try {
             LocalDate from = LocalDate.parse(fromField.getText().trim());
             LocalDate to = LocalDate.parse(toField.getText().trim());
             if (from.isAfter(to)) throw new IllegalArgumentException("From date must be on or before To date.");
             ReportSummary summary = reportManager.getSummary(user, from, to);
+            List<ReportRow> memberRows = null;
+            List<ReportRow> areaRows = null;
+            ReportRow own = null;
+            if (user.isAdmin()) {
+                memberRows = reportManager.getAllUserReports(from, to, user);
+                areaRows = reportManager.getAreaReports(from, to, user);
+            } else {
+                own = reportManager.getUserReport(user.getUsername(), from, to, user);
+            }
+
             totalValue.setText(kg(summary.getTotalKg()));
             organicValue.setText(kg(summary.getOrganicKg()));
             recyclableValue.setText(kg(summary.getRecyclableKg()));
             hazardousValue.setText(kg(summary.getHazardousKg()));
             recordCountValue.setText(String.valueOf(summary.getCompletedRecords()));
-
             if (user.isAdmin()) {
-                currentMemberReports = reportManager.getAllUserReports(from, to, user);
-                currentAreaReports = reportManager.getAreaReports(from, to, user);
+                currentMemberReports = memberRows;
+                currentAreaReports = areaRows;
                 fillMemberRows();
                 fillAreaRows();
                 areaChart.setReports(currentAreaReports);
             } else {
-                ReportRow own = reportManager.getUserReport(user.getUsername(), from, to, user);
                 personalReportModel.setRowCount(0);
                 personalReportModel.addRow(new Object[]{"Assigned area", kg(own.getAssignedKg()), "-", "-", "-", "-"});
                 personalReportModel.addRow(new Object[]{"Additional / bonus", kg(own.getBonusKg()), "-", "-", "-", "-"});
                 personalReportModel.addRow(new Object[]{"All your collections", kg(own.getTotalKg()), kg(own.getOrganic()),
                         kg(own.getRecyclable()), kg(own.getHazardous()), own.getRecords()});
             }
+            appliedFrom = from;
+            appliedTo = to;
+            appliedRangeLabel.setText("Applied range: " + from + " to " + to);
         } catch (DateTimeParseException exception) {
             showError("Enter report dates using yyyy-MM-dd.");
         } catch (IllegalArgumentException | SQLException exception) {
@@ -697,6 +839,12 @@ public class WasteManagementGUI extends JFrame {
                 kg(row.getBonusKg()), row.getRecords()});
     }
 
+    private static String displayStatus(Waste waste) {
+        if (waste.isCompletionRequested()) return "PENDING - AWAITING APPROVAL";
+        if ("REJECTED".equals(waste.getCompletionRequestStatus())) return "PENDING - REQUEST REJECTED";
+        return waste.getStatus();
+    }
+
     private void fillAreaRows() {
         areaReportModel.setRowCount(0);
         for (ReportRow row : currentAreaReports) areaReportModel.addRow(new Object[]{row.getLabel(), kg(row.getTotalKg()),
@@ -704,25 +852,39 @@ public class WasteManagementGUI extends JFrame {
     }
 
     private void exportCurrentReport() {
+        if (appliedFrom == null || appliedTo == null) {
+            showError("Apply a valid date range before exporting.");
+            return;
+        }
         JFileChooser chooser = new JFileChooser();
         chooser.setSelectedFile(new File(user.isAdmin() ? "clean-cet-waste-report.csv" : user.getUsername() + "-waste-report.csv"));
+        chooser.setFileFilter(new FileNameExtensionFilter("CSV files (*.csv)", "csv"));
         if (chooser.showSaveDialog(this) != JFileChooser.APPROVE_OPTION) return;
         try {
-            LocalDate from = LocalDate.parse(fromField.getText().trim());
-            LocalDate to = LocalDate.parse(toField.getText().trim());
-            if (from.isAfter(to)) throw new IllegalArgumentException("From date must be on or before To date.");
-            try (BufferedWriter writer = Files.newBufferedWriter(chooser.getSelectedFile().toPath(), StandardCharsets.UTF_8)) {
-                writer.write("Report period," + csv(from.toString()) + "," + csv(to.toString()) + "\n\n");
-            if (user.isAdmin()) {
-                writer.write("Member,Total kg,Organic kg,Recyclable kg,Hazardous kg,Assigned area kg,Bonus kg,Completed records\n");
-                for (ReportRow row : reportManager.getAllUserReports(from, to, user)) writer.write(csv(row.getLabel()) + "," + row.getTotalKg() + "," + row.getOrganic() + "," + row.getRecyclable() + "," + row.getHazardous() + "," + row.getAssignedKg() + "," + row.getBonusKg() + "," + row.getRecords() + "\n");
-                writer.write("\nArea,Total kg,Organic kg,Recyclable kg,Hazardous kg,Completed records\n");
-                for (ReportRow row : reportManager.getAreaReports(from, to, user)) writer.write(csv(row.getLabel()) + "," + row.getTotalKg() + "," + row.getOrganic() + "," + row.getRecyclable() + "," + row.getHazardous() + "," + row.getRecords() + "\n");
-            } else {
-                writer.write("Member,Total kg,Organic kg,Recyclable kg,Hazardous kg,Assigned area kg,Bonus kg,Completed records\n");
-                ReportRow row = reportManager.getUserReport(user.getUsername(), from, to, user);
-                writer.write(csv(user.getDisplayName()) + "," + row.getTotalKg() + "," + row.getOrganic() + "," + row.getRecyclable() + "," + row.getHazardous() + "," + row.getAssignedKg() + "," + row.getBonusKg() + "," + row.getRecords() + "\n");
+            LocalDate from = appliedFrom;
+            LocalDate to = appliedTo;
+            List<ReportRow> memberRows = user.isAdmin() ? reportManager.getAllUserReports(from, to, user) : null;
+            List<ReportRow> areaRows = user.isAdmin() ? reportManager.getAreaReports(from, to, user) : null;
+            ReportRow personalRow = user.isAdmin() ? null
+                    : reportManager.getUserReport(user.getUsername(), from, to, user);
+            File output = chooser.getSelectedFile();
+            if (!output.getName().toLowerCase(java.util.Locale.ROOT).endsWith(".csv")) {
+                output = new File(output.getAbsolutePath() + ".csv");
             }
+            if (output.exists() && JOptionPane.showConfirmDialog(this,
+                    "Replace " + output.getName() + "?", "Confirm export", JOptionPane.YES_NO_OPTION,
+                    JOptionPane.WARNING_MESSAGE) != JOptionPane.YES_OPTION) return;
+            try (BufferedWriter writer = Files.newBufferedWriter(output.toPath(), StandardCharsets.UTF_8)) {
+                writer.write("Report period," + csv(from.toString()) + "," + csv(to.toString()) + "\n\n");
+                if (user.isAdmin()) {
+                    writer.write("Member,Total kg,Organic kg,Recyclable kg,Hazardous kg,Assigned area kg,Bonus kg,Completed records\n");
+                    for (ReportRow row : memberRows) writer.write(csv(row.getLabel()) + "," + row.getTotalKg() + "," + row.getOrganic() + "," + row.getRecyclable() + "," + row.getHazardous() + "," + row.getAssignedKg() + "," + row.getBonusKg() + "," + row.getRecords() + "\n");
+                    writer.write("\nArea,Total kg,Organic kg,Recyclable kg,Hazardous kg,Completed records\n");
+                    for (ReportRow row : areaRows) writer.write(csv(row.getLabel()) + "," + row.getTotalKg() + "," + row.getOrganic() + "," + row.getRecyclable() + "," + row.getHazardous() + "," + row.getRecords() + "\n");
+                } else {
+                    writer.write("Member,Total kg,Organic kg,Recyclable kg,Hazardous kg,Assigned area kg,Bonus kg,Completed records\n");
+                    writer.write(csv(user.getDisplayName()) + "," + personalRow.getTotalKg() + "," + personalRow.getOrganic() + "," + personalRow.getRecyclable() + "," + personalRow.getHazardous() + "," + personalRow.getAssignedKg() + "," + personalRow.getBonusKg() + "," + personalRow.getRecords() + "\n");
+                }
             }
             showMessage("Report exported successfully.");
         } catch (Exception exception) { showError("Could not export report: " + exception.getMessage()); }
@@ -799,12 +961,18 @@ public class WasteManagementGUI extends JFrame {
 
     private JButton button(String text, boolean primary) {
         JButton button = new JButton(text);
+        button.setUI(new BasicButtonUI());
+        button.setOpaque(true);
+        button.setContentAreaFilled(true);
+        button.setBorderPainted(true);
         button.setBackground(primary ? PURPLE : new Color(248, 247, 251));
         button.setForeground(primary ? Color.WHITE : PURPLE_DARK);
-        button.setFont(new Font("SansSerif", Font.BOLD, 12));
+        button.setFont(new Font("SansSerif", Font.BOLD, 11));
         button.setFocusPainted(false);
+        button.setMargin(new Insets(5, 6, 5, 6));
+        button.setMinimumSize(new Dimension(0, 38));
         button.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createLineBorder(primary ? PURPLE : LINE),
-                new EmptyBorder(8, 12, 8, 12)));
+                new EmptyBorder(6, 8, 6, 8)));
         return button;
     }
 

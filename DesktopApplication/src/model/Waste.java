@@ -12,6 +12,8 @@ public abstract class Waste {
     private String createdBy;
     private String collectedAt;
     private String invalidReason;
+    private boolean completionRequested;
+    private String completionRequestStatus;
 
     public Waste() {
     }
@@ -35,6 +37,10 @@ public abstract class Waste {
     public void setCollectedAt(String collectedAt) { this.collectedAt = collectedAt; }
     public String getInvalidReason() { return invalidReason; }
     public void setInvalidReason(String invalidReason) { this.invalidReason = invalidReason; }
+    public boolean isCompletionRequested() { return completionRequested; }
+    public void setCompletionRequested(boolean completionRequested) { this.completionRequested = completionRequested; }
+    public String getCompletionRequestStatus() { return completionRequestStatus; }
+    public void setCompletionRequestStatus(String completionRequestStatus) { this.completionRequestStatus = completionRequestStatus; }
 
     public int getId() {
         return id;

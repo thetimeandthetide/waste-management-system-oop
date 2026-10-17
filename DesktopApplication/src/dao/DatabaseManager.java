@@ -67,6 +67,9 @@ public class DatabaseManager {
                 + "created_by VARCHAR(40), collected_by VARCHAR(40), collected_at DATETIME NOT NULL, "
                 + "invalid_reason VARCHAR(255), created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP, "
                 + "updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, "
+                + "INDEX idx_waste_report (status, collected_at), "
+                + "INDEX idx_waste_collector (collected_by, status), "
+                + "INDEX idx_waste_area (location, status), "
                 + "CONSTRAINT fk_waste_creator FOREIGN KEY (created_by) REFERENCES app_users(username), "
                 + "CONSTRAINT fk_waste_collector FOREIGN KEY (collected_by) REFERENCES app_users(username), "
                 + "CHECK (waste_type IN ('Organic','Recyclable','Hazardous')), "
@@ -83,11 +86,21 @@ public class DatabaseManager {
                 + "PRIMARY KEY (announcement_id, username), "
                 + "CONSTRAINT fk_announcement_read_announcement FOREIGN KEY (announcement_id) REFERENCES announcements(id) ON DELETE CASCADE, "
                 + "CONSTRAINT fk_announcement_read_user FOREIGN KEY (username) REFERENCES app_users(username) ON DELETE CASCADE) ENGINE=InnoDB";
+        String completionSql = "CREATE TABLE IF NOT EXISTS completion_requests ("
+                + "id BIGINT AUTO_INCREMENT PRIMARY KEY, waste_id INT NOT NULL, requested_by VARCHAR(40) NOT NULL, "
+                + "requested_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP, request_status VARCHAR(12) NOT NULL DEFAULT 'PENDING', "
+                + "reviewed_by VARCHAR(40), reviewed_at TIMESTAMP NULL, "
+                + "CONSTRAINT fk_completion_waste FOREIGN KEY (waste_id) REFERENCES waste(id) ON DELETE CASCADE, "
+                + "CONSTRAINT fk_completion_requester FOREIGN KEY (requested_by) REFERENCES app_users(username), "
+                + "CONSTRAINT fk_completion_reviewer FOREIGN KEY (reviewed_by) REFERENCES app_users(username), "
+                + "CHECK (request_status IN ('PENDING','APPROVED','REJECTED','CANCELLED')), "
+                + "INDEX idx_completion_status_requested (request_status, requested_at)) ENGINE=InnoDB";
         try (Connection connection = getConnection(); Statement statement = connection.createStatement()) {
             statement.executeUpdate(usersSql);
             statement.executeUpdate(wasteSql);
             statement.executeUpdate(announcementSql);
             statement.executeUpdate(readSql);
+            statement.executeUpdate(completionSql);
         }
     }
 
@@ -98,6 +111,9 @@ public class DatabaseManager {
         addColumnIfMissing("invalid_reason", "VARCHAR(255) NULL");
         addColumnIfMissing("created_at", "TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP");
         addColumnIfMissing("updated_at", "TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP");
+        addIndexIfMissing("idx_waste_report", "status, collected_at");
+        addIndexIfMissing("idx_waste_collector", "collected_by, status");
+        addIndexIfMissing("idx_waste_area", "location, status");
 
         try (Connection connection = getConnection(); Statement statement = connection.createStatement()) {
             statement.executeUpdate("UPDATE waste SET collected_at = COALESCE(collected_at, created_at, CURRENT_TIMESTAMP)");
@@ -116,6 +132,19 @@ public class DatabaseManager {
             try (Statement statement = connection.createStatement()) {
                 statement.executeUpdate("ALTER TABLE waste ADD COLUMN " + column + " " + definition);
             }
+        }
+    }
+
+    private static void addIndexIfMissing(String indexName, String columns) throws SQLException {
+        try (Connection connection = getConnection();
+             ResultSet indexes = connection.getMetaData().getIndexInfo(connection.getCatalog(), null,
+                     "waste", false, false)) {
+            while (indexes.next()) {
+                if (indexName.equalsIgnoreCase(indexes.getString("INDEX_NAME"))) return;
+            }
+        }
+        try (Connection connection = getConnection(); Statement statement = connection.createStatement()) {
+            statement.executeUpdate("CREATE INDEX " + indexName + " ON waste (" + columns + ")");
         }
     }
 

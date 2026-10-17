@@ -13,6 +13,7 @@ import javax.swing.JPasswordField;
 import javax.swing.JTextField;
 import javax.swing.SwingConstants;
 import javax.swing.border.EmptyBorder;
+import javax.swing.plaf.basic.BasicButtonUI;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Font;
@@ -55,6 +56,10 @@ public class LoginFrame extends JFrame {
         styleInput(passwordField);
 
         JButton signIn = new JButton("Sign in");
+        signIn.setUI(new BasicButtonUI());
+        signIn.setOpaque(true);
+        signIn.setContentAreaFilled(true);
+        signIn.setBorderPainted(true);
         signIn.setBackground(new Color(89, 70, 168));
         signIn.setForeground(Color.WHITE);
         signIn.setFocusPainted(false);

@@ -53,5 +53,22 @@ CREATE TABLE IF NOT EXISTS announcement_reads (
         REFERENCES app_users(username) ON DELETE CASCADE
 );
 
+CREATE TABLE IF NOT EXISTS completion_requests (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    waste_id INT NOT NULL,
+    requested_by VARCHAR(40) NOT NULL,
+    requested_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    request_status VARCHAR(12) NOT NULL DEFAULT 'PENDING',
+    reviewed_by VARCHAR(40),
+    reviewed_at TIMESTAMP NULL,
+    INDEX idx_completion_status_requested (request_status, requested_at),
+    CONSTRAINT fk_completion_waste FOREIGN KEY (waste_id)
+        REFERENCES waste(id) ON DELETE CASCADE,
+    CONSTRAINT fk_completion_requester FOREIGN KEY (requested_by)
+        REFERENCES app_users(username),
+    CONSTRAINT fk_completion_reviewer FOREIGN KEY (reviewed_by)
+        REFERENCES app_users(username)
+);
+
 -- Application startup adds missing columns to an older waste table and seeds
 -- the administrator/member accounts without replacing existing records.

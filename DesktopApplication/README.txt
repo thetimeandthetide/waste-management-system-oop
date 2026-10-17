@@ -19,8 +19,8 @@ RUN ON macOS/Linux
 2. From this folder run ./build.sh and then ./run.sh.
 
 On first launch the app creates waste_management_db, app_users, waste,
-announcements and announcement_reads, applies safe additive schema migrations,
-and seeds the 13 member accounts plus one admin.
+announcements, announcement_reads and completion_requests, applies safe additive
+schema migrations, and seeds the 13 member accounts plus one admin.
 The default MySQL settings are localhost:3306, database waste_management_db,
 username root, and an empty password. Set environment variables before launch
 to override them: WASTE_DB_SERVER, WASTE_DB_NAME, WASTE_DB_USER, WASTE_DB_PASSWORD.
@@ -45,8 +45,15 @@ DESCRIBE waste;
 SELECT * FROM waste ORDER BY collected_at DESC;
 SELECT username, display_name, assigned_area, role FROM app_users;
 
+Members can submit a completion request for their pending record. The admin
+approval queue refreshes its count every 15 seconds; approving marks the record
+completed, while rejecting leaves it pending for correction or resubmission.
+Only completed rows count in reports. Area reports aggregate kilograms and
+record counts at the actual collection location; they are waste-accumulation
+reports, not a population estimate or scientific pollution measurement. Apply
+dates before export; the CSV uses the last successfully applied range.
+
 Reports are calculated from completed rows in waste, not maintained in one table
 per user. Admins can broadcast announcements; members see unread notices and
-read receipts in the application inbox. Notices are not real-time push or direct
-two-way chat. The implementation walkthrough and limitations are in
-ROLE_REPORTS_VIVA_ADDENDUM.md.
+read receipts in the application inbox. The implementation walkthrough and
+limitations are in ROLE_REPORTS_VIVA_ADDENDUM.md.

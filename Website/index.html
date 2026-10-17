@@ -68,7 +68,7 @@
                 <article class="card"><h3>Add Records</h3><p>User enters waste details and clicks Add. Java sends an INSERT query to MySQL.</p></article>
                 <article class="card"><h3>View Records</h3><p>The app reads all database rows and shows them in a JTable.</p></article>
                 <article class="card"><h3>Update Records</h3><p>Selecting a row fills the form. Edited values are saved with an UPDATE query.</p></article>
-                <article class="card"><h3>Review Records</h3><p>Members can flag their own entry invalid. Admin can complete or delete records.</p></article>
+                <article class="card"><h3>Review Records</h3><p>Members can flag an entry invalid or request completion. Admin approves the request or marks a selected record collected directly.</p></article>
                 <article class="card"><h3>Search Records</h3><p>The search box narrows the records available to the signed-in role.</p></article>
                 <article class="card"><h3>Generate Reports</h3><p>Completed collections are summarized by member, category, actual area, and date range.</p></article>
             </div>
@@ -76,18 +76,18 @@
 
         <section class="section" id="roles">
             <h2>Login, Roles, And Reporting</h2>
-            <p>The current desktop build starts at a login screen. A member can add records, update their own pending records, flag their own pending records invalid, and view only their personal contribution. The admin can review all entries, mark them completed, delete them, and view overall, individual-member, and area reports.</p>
+            <p>The current desktop build starts at a login screen. A member can add and update their own pending records, flag them invalid, request collection approval, and view only their personal contribution. The admin can review all entries, approve or reject requests, mark selected records collected directly, delete them, and view overall, individual-member, and area reports.</p>
             <div class="grid three">
-                <article class="card"><h3>Completed only</h3><p>Pending and invalid records are excluded. Admin completion is the review gate that makes a collection count in reports.</p></article>
+                <article class="card"><h3>Approval gate</h3><p>A member request remains pending until admin approval. Only completed records count in reports; rejected requests remain editable and can be resubmitted.</p></article>
                 <article class="card"><h3>Assigned and bonus</h3><p>Actual collection at a different location from a member's assigned territory appears as bonus in their personal report. Area totals follow the actual location.</p></article>
-                <article class="card"><h3>Live aggregation</h3><p>SQL aggregates the canonical waste records by date, category, member, and location. There are no separately maintained report tables to go stale.</p></article>
+                <article class="card"><h3>Area accumulation</h3><p>SQL sums approved kilograms and counts records by actual location and applied date range. It is not a population estimate or scientific pollution index.</p></article>
             </div>
             <div class="table-card">
                 <table>
                     <thead><tr><th>Role</th><th>Can do</th><th>Report access</th></tr></thead>
                     <tbody>
-                        <tr><td>Member</td><td>Add; update own pending entry; mark own pending entry invalid</td><td>Own contribution only</td></tr>
-                        <tr><td>Admin</td><td>Review all; add/assign; update, complete, invalidate, delete</td><td>Overall, each member, and each area</td></tr>
+                        <tr><td>Member</td><td>Add; update own pending entry; request completion; mark own pending entry invalid</td><td>Own contribution only</td></tr>
+                        <tr><td>Admin</td><td>Review all; add/assign; update, approve/reject requests, mark collected, invalidate, delete</td><td>Overall, each member, and each area</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -182,8 +182,9 @@
                 </article>
                 <article class="code-card">
                     <h3>Table</h3>
-                    <pre><code>app_users + waste + announcements + announcement_reads</code></pre>
-                    <p>Accounts, collection records, admin broadcasts, and per-member read receipts are stored separately.</p>
+                    <pre><code>app_users + waste + announcements + announcement_reads
+completion_requests</code></pre>
+                    <p>Accounts, collection records, admin broadcasts, read receipts, and member collection-approval requests are stored separately.</p>
                 </article>
             </div>
             <div class="table-card">
@@ -334,7 +335,7 @@ CREATE TABLE IF NOT EXISTS</code></pre>
                 <pre><code>createTablePanel()</code></pre>
                 <p><strong>Meaning:</strong> Builds the JTable that displays database records.</p>
                 <pre><code>createButtonPanel()</code></pre>
-                <p><strong>Meaning:</strong> Builds role-appropriate Add, Update, Mark Invalid, Mark Completed, Delete, Search, Reports, Announcements, Logout, and Clear controls.</p>
+                <p><strong>Meaning:</strong> Builds role-appropriate Add, Update, Mark Invalid, Request Approval, Admin Approval, Mark as Collected, Delete, Search, Reports, Announcements, Logout, and Clear controls.</p>
                 <pre><code>addButton.addActionListener(event -&gt; addWaste());</code></pre>
                 <p><strong>Meaning:</strong> This is Swing event handling. When the button is clicked, addWaste() runs.</p>
                 <pre><code>createWasteObject(int id)</code></pre>
@@ -427,7 +428,7 @@ run.bat</code></pre>
                 <li>It is a Java desktop application, not a web application.</li>
                 <li>I used Java Swing for the interface and MySQL for storing records.</li>
                 <li>Java connects to MySQL using JDBC and the MySQL Connector/J driver.</li>
-                <li>The main features are add, view, update, search, mark invalid, admin-only completion/deletion, reports, and announcements.</li>
+                <li>The main features are add, view, update, search, invalidation, member completion requests, admin approval/direct collection/deletion, reports, and announcements.</li>
                 <li>The project is divided into packages: model, dao, gui, and main.</li>
                 <li>In the model package, Waste is an abstract class. OrganicWaste, RecyclableWaste, and HazardousWaste inherit from it.</li>
                 <li>Encapsulation is shown using private fields and getters/setters.</li>

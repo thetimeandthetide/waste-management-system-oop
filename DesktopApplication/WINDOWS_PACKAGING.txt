@@ -40,3 +40,6 @@ Important:
 - The database must be created using sql/setup.sql.
 - Configure credentials with WASTE_DB_USER and WASTE_DB_PASSWORD environment
   variables before running the application. Do not put real passwords in source.
+- For separate computers to share collection records and approval requests, set
+  WASTE_DB_SERVER to the same reachable MySQL server on every computer. The
+  default localhost setting creates separate, unsynchronized databases.
