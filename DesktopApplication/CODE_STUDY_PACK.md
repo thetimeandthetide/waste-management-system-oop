@@ -1,6 +1,12 @@
 # Waste Management System Code Study Pack
 
-> Update notice: the original notes below describe the first CRUD-only version. The current application adds login, roles, collected timestamps, invalid/completed states, reports, and CSV export. Use [ROLE_REPORTS_VIVA_ADDENDUM.md](ROLE_REPORTS_VIVA_ADDENDUM.md) as the source of truth for these new files and behaviors; some older GUI/database details below no longer match the current source.
+> **Current-version notice:** The long code listings below are historical teaching examples from the first CRUD-only draft and do not match the current source line-for-line. Do not run those old snippets or quote their behavior as the current app. The current files in `src/`, [ROLE_REPORTS_VIVA_ADDENDUM.md](ROLE_REPORTS_VIVA_ADDENDUM.md), [VIVA_GUIDE.txt](VIVA_GUIDE.txt), and the [published file-by-file website walkthrough](https://waste-viva-joseph-1791639455.web.app/code-walkthrough.html) are authoritative. In particular, current members cannot mark records completed directly; they request admin approval.
+
+## Current Registration And Admin Directory
+
+The login window's **Join Clean CET** button opens a Swing form for full name, date of birth (`yyyy-MM-dd`), CET register number (for example `TVE25CSE068`), and department. `UserManager.register()` validates the fields and unique identifiers, takes the lowercase first name as the username, hashes the requested `<username>_clean` password with a per-user salt, chooses an unassigned location randomly, and commits the new `app_users` row and area assignment in one transaction. A confirmation popup shows the username, temporary password, and assigned area once, then opens that member's workspace. The admin-only **Member directory** shows profile and assignment details; passwords are never listed or stored as plaintext. Admins can add future registration areas there. The register number is format-checked, not verified with a CET registry; DOB and student numbers are personal data and should not be exposed in a recording without consent. The initial member credentials are predictable and are for this classroom project only.
+
+The fifteen initial locations available to new registrations are Industrial department front, EC department front, Rohith square, Sargam stage, Library front, Ohm's villa, Industrial base, College ground, Research block, Old EC department, Hydraulics lab front, Back gate, Mh front, Lh front, and Flag post. The original thirteen seeded members keep their existing assigned areas.
 
 Use this document for tomorrow's presentation and viva. It follows the same flow as your PPT: idea, design, OOP, database, Swing GUI, implementation, and run commands.
 
@@ -1060,27 +1066,18 @@ public class Main {
 **Path:** `sql/setup.sql`
 
 ```sql
-DROP DATABASE IF EXISTS waste_management_db;
-CREATE DATABASE waste_management_db;
-
+-- The current setup is non-destructive and preserves existing records.
+SOURCE sql/setup.sql;
 USE waste_management_db;
-
-CREATE TABLE IF NOT EXISTS waste (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    waste_type VARCHAR(50) NOT NULL,
-    description VARCHAR(255) NOT NULL,
-    quantity DOUBLE NOT NULL,
-    location VARCHAR(100) NOT NULL,
-    status VARCHAR(50) NOT NULL
-);
-
-INSERT INTO waste (waste_type, description, quantity, location, status)
-VALUES
-('Organic', 'Food waste from cafeteria', 12.5, 'College Canteen', 'Pending'),
-('Recyclable', 'Plastic bottles', 8.0, 'Block A', 'Pending'),
-('Hazardous', 'Used batteries', 3.0, 'Lab Room 2', 'Collected');
-
+SHOW TABLES;
+DESCRIBE app_users;
+DESCRIBE registration_areas;
+DESCRIBE waste;
+SELECT username, display_name, role, assigned_area FROM app_users;
+SELECT area_name, assigned_username FROM registration_areas ORDER BY area_name;
 ```
+
+For the exact current schema and the legacy-column migration, inspect `sql/setup.sql` and `src/dao/DatabaseManager.java`. Startup creates or migrates tables without dropping the database.
 
 ## Build: build.sh
 
@@ -1227,9 +1224,13 @@ A: Because MySQL auto-generates ID using AUTO_INCREMENT.
 
 A: A ListSelectionListener calls fillFormFromSelectedRow(), which copies selected row data to the form.
 
-**Q: How is collected status changed?**
+**Q: How is a member's collection marked complete?**
 
-A: markAsCollected(id) runs UPDATE waste SET status = Collected WHERE id = ?.
+A: The member requests completion for their own pending record. The admin approves or rejects it in the collection-approval queue; an admin may also mark a pending record collected directly. `WasteManager` enforces the roles and updates related request/record state transactionally.
+
+**Q: How does a new user join and get an area?**
+
+A: Join Clean CET collects the profile, `UserManager` derives the lowercase first-name username, checks for duplicates, selects an unused area, and creates the account plus assignment in one transaction. The UI then shows the requested temporary credentials once and opens the member workspace.
 
 ## 7. Presentation Flow To Speak
 
