@@ -18,6 +18,11 @@ RUN ON macOS/Linux
 1. Start MySQL Server.
 2. From this folder run ./build.sh and then ./run.sh.
 
+When updating the application, close older app windows first. Run ./build.sh
+then ./run.sh (or build.bat then run.bat on Windows) to load the latest classes
+and button styling. An IDE may launch a different output folder or leave an
+already-running window on the previous version.
+
 On first launch the app creates waste_management_db, app_users, waste,
 announcements, announcement_reads and completion_requests, applies safe additive
 schema migrations, and seeds the 13 member accounts plus one admin.

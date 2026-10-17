@@ -11,6 +11,7 @@ It is a desktop-only Java Swing application. `Main` initializes MySQL and opens 
 - `src/main/Main.java`: Java entry point; initializes schema, then opens the login window on Swing's Event Dispatch Thread.
 - `src/gui/LoginFrame.java`: username/password form, login button event, calls authentication, passes the authenticated user to the main GUI.
 - `src/gui/WasteManagementGUI.java`: builds the role-aware Swing dashboard, record form/table, admin collection-approval queue, reports, applied date filters, chart, CSV export, announcements inbox, validation, confirmation dialogs, and button event listeners.
+- `src/gui/CleanButtonUI.java`: paints shared button backgrounds and interaction states consistently across operating-system look-and-feels.
 - `src/model/Waste.java`: abstract waste entity with private common data and accessors; includes collector, record author, collected time, and invalid reason.
 - `src/model/OrganicWaste.java`, `RecyclableWaste.java`, `HazardousWaste.java`: concrete subclasses implementing `getWasteCategory()`.
 - `src/model/AppUser.java`: authenticated identity, role, and assigned territory passed through the app.

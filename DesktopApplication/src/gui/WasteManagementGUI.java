@@ -28,7 +28,6 @@ import javax.swing.SwingConstants;
 import javax.swing.Timer;
 import javax.swing.border.EmptyBorder;
 import javax.swing.table.DefaultTableModel;
-import javax.swing.plaf.basic.BasicButtonUI;
 import java.awt.BorderLayout;
 import java.awt.CardLayout;
 import java.awt.Color;
@@ -184,7 +183,7 @@ public class WasteManagementGUI extends JFrame {
 
     private JButton navButton(String text) {
         JButton button = new JButton(text);
-        button.setUI(new BasicButtonUI());
+        button.setUI(new CleanButtonUI());
         button.setOpaque(true);
         button.setContentAreaFilled(true);
         button.setBorderPainted(false);
@@ -491,7 +490,9 @@ public class WasteManagementGUI extends JFrame {
         JPanel control = new JPanel(new BorderLayout(8, 0));
         control.setOpaque(false);
         control.add(filters, BorderLayout.CENTER);
-        JPanel buttons = new JPanel(new GridLayout(1, 2, 8, 0));
+        apply.setPreferredSize(new Dimension(108, 40));
+        export.setPreferredSize(new Dimension(108, 40));
+        JPanel buttons = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 2));
         buttons.setOpaque(false); buttons.add(apply); buttons.add(export);
         control.add(buttons, BorderLayout.EAST);
         appliedRangeLabel = new JLabel("Applied range: not applied");
@@ -543,10 +544,10 @@ public class WasteManagementGUI extends JFrame {
         JPanel panel = new JPanel(new BorderLayout(12, 12));
         panel.setOpaque(false);
         JPanel chartPanel = card(new BorderLayout(8, 8));
-        chartPanel.add(sectionTitle("Waste accumulation by actual area (kg)"), BorderLayout.NORTH);
+        chartPanel.add(sectionTitle("Collected weight by area (kg)"), BorderLayout.NORTH);
         areaChart = new AreaChart();
         chartPanel.add(areaChart, BorderLayout.CENTER);
-        chartPanel.setPreferredSize(new Dimension(270, 500));
+        chartPanel.setPreferredSize(new Dimension(310, 500));
 
         JPanel tableCard = card(new BorderLayout(10, 10));
         tableCard.add(sectionTitle("Collected weight and record count by area"), BorderLayout.NORTH);
@@ -961,7 +962,7 @@ public class WasteManagementGUI extends JFrame {
 
     private JButton button(String text, boolean primary) {
         JButton button = new JButton(text);
-        button.setUI(new BasicButtonUI());
+        button.setUI(new CleanButtonUI());
         button.setOpaque(true);
         button.setContentAreaFilled(true);
         button.setBorderPainted(true);
@@ -1011,7 +1012,15 @@ public class WasteManagementGUI extends JFrame {
             super.paintComponent(graphics);
             java.awt.Graphics2D g = (java.awt.Graphics2D) graphics.create();
             g.setRenderingHint(java.awt.RenderingHints.KEY_ANTIALIASING, java.awt.RenderingHints.VALUE_ANTIALIAS_ON);
-            int left = 10, right = 42, top = 12, rowHeight = 29;
+            if (reports.isEmpty()) {
+                g.setColor(MUTED);
+                g.setFont(new Font("SansSerif", Font.PLAIN, 12));
+                g.drawString("No completed collections in this date range.", 12, 24);
+                g.dispose();
+                return;
+            }
+            int left = 10, right = 42, top = 12;
+            int rowHeight = Math.max(24, Math.min(29, (getHeight() - top) / reports.size()));
             double max = 1;
             for (ReportRow row : reports) max = Math.max(max, row.getTotalKg());
             g.setFont(new Font("SansSerif", Font.PLAIN, 10));

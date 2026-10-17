@@ -134,6 +134,7 @@
 │   ├── model/Announcement.java
 │   ├── gui
 │   │   ├── LoginFrame.java
+│   │   ├── CleanButtonUI.java
 │   │   └── WasteManagementGUI.java
 │   └── main
 │       └── Main.java
@@ -330,22 +331,18 @@ CREATE TABLE IF NOT EXISTS</code></pre>
                 <p><strong>Meaning:</strong> JFrame is the main window of a Swing desktop application.</p>
                 <pre><code>JTextField, JComboBox, JTable, JButton</code></pre>
                 <p><strong>Meaning:</strong> These are Swing components: text boxes, dropdowns, table, and buttons.</p>
-                <pre><code>createFormPanel()</code></pre>
-                <p><strong>Meaning:</strong> Builds the input form for ID, type, description, quantity, location, and status.</p>
-                <pre><code>createTablePanel()</code></pre>
-                <p><strong>Meaning:</strong> Builds the JTable that displays database records.</p>
-                <pre><code>createButtonPanel()</code></pre>
-                <p><strong>Meaning:</strong> Builds role-appropriate Add, Update, Mark Invalid, Request Approval, Admin Approval, Mark as Collected, Delete, Search, Reports, Announcements, Logout, and Clear controls.</p>
-                <pre><code>addButton.addActionListener(event -&gt; addWaste());</code></pre>
-                <p><strong>Meaning:</strong> This is Swing event handling. When the button is clicked, addWaste() runs.</p>
-                <pre><code>createWasteObject(int id)</code></pre>
-                <p><strong>Meaning:</strong> Reads form values and creates the correct child object based on selected waste type.</p>
-                <pre><code>showWasteInTable(List&lt;Waste&gt; wasteList)</code></pre>
-                <p><strong>Meaning:</strong> Takes Java objects and displays them as table rows.</p>
-                <pre><code>fillFormFromSelectedRow()</code></pre>
-                <p><strong>Meaning:</strong> When a table row is selected, its values are copied into the form for editing.</p>
-                <pre><code>GradientPanel, HeaderPanel, RoundedPanel, RoundedButton</code></pre>
-                <p><strong>Meaning:</strong> These helper classes make the interface aesthetic using custom Swing painting.</p>
+                <pre><code>createRecordsPage()</code></pre>
+                <p><strong>Meaning:</strong> Builds the record table, search controls, role-specific actions, and collection form.</p>
+                <pre><code>addRecord(), updateRecord(), requestCompletion()</code></pre>
+                <p><strong>Meaning:</strong> Button event handlers validate form data, call WasteManager, and refresh visible records.</p>
+                <pre><code>createReportHeading(), applyReportDates()</code></pre>
+                <p><strong>Meaning:</strong> Builds date controls and refreshes totals only after valid report queries succeed.</p>
+                <pre><code>exportCurrentReport()</code></pre>
+                <p><strong>Meaning:</strong> Writes CSV data using the last successfully applied date range.</p>
+                <pre><code>AreaChart.paintComponent(...)</code></pre>
+                <p><strong>Meaning:</strong> Uses Java2D to draw collected kilograms by actual area, scales bars to the report totals, and displays an empty-state message when there are no matches.</p>
+                <pre><code>CleanButtonUI</code></pre>
+                <p><strong>Meaning:</strong> Explicitly paints button fills and interaction states so labels remain readable across native operating-system styles.</p>
             </details>
 
             <details>

@@ -41,6 +41,7 @@ OOP EXPLANATION
 6. Exception handling: database and parsing errors are caught and reported.
 7. Packages: model, dao, gui, and main divide responsibilities.
 8. Swing events: button ActionListeners call handlers and refresh visible data.
+9. `CleanButtonUI` paints button fills and hover/pressed states so action labels remain readable across operating-system styles.
 
 SHORT PRESENTATION FLOW
 1. Introduce the problem and explain that this is a desktop tool, not a website.
