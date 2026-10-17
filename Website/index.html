@@ -406,10 +406,10 @@ USE waste_management_db;</code></pre>
         <section class="section" id="run">
             <h2>How To Run And Check Everything</h2>
             <h3>Run The App</h3>
-            <pre><code>cd /Users/josephfidel/Desktop/WasteManagementSystem
+            <pre><code>cd /path/to/WasteManagementSystem/DesktopApplication
 ./run.sh</code></pre>
             <h3>Rebuild The App</h3>
-            <pre><code>cd /Users/josephfidel/Desktop/WasteManagementSystem
+            <pre><code>cd /path/to/WasteManagementSystem/DesktopApplication
 ./build.sh</code></pre>
             <h3>Start MySQL</h3>
             <pre><code>brew services start mysql</code></pre>
@@ -427,7 +427,7 @@ run.bat</code></pre>
                 <li>It is a Java desktop application, not a web application.</li>
                 <li>I used Java Swing for the interface and MySQL for storing records.</li>
                 <li>Java connects to MySQL using JDBC and the MySQL Connector/J driver.</li>
-                <li>The main features are add, view, update, delete, search, and mark waste as collected.</li>
+                <li>The main features are add, view, update, search, mark invalid, admin-only completion/deletion, reports, and announcements.</li>
                 <li>The project is divided into packages: model, dao, gui, and main.</li>
                 <li>In the model package, Waste is an abstract class. OrganicWaste, RecyclableWaste, and HazardousWaste inherit from it.</li>
                 <li>Encapsulation is shown using private fields and getters/setters.</li>

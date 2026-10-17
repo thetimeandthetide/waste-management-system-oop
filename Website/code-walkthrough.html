@@ -100,17 +100,17 @@ FROM waste ORDER BY collected_at DESC;</code></pre>
             <pre><code>brew services start mysql</code></pre>
             <p>This starts the MySQL server in the background. The Java app needs MySQL running before it can store or read data.</p>
 
-            <h3>2. Open The Project Folder</h3>
-            <pre><code>cd /Users/josephfidel/Desktop/WasteManagementSystem</code></pre>
-            <p>This moves Terminal into the project folder.</p>
+            <h3>2. Open The DesktopApplication Folder</h3>
+            <pre><code>cd /path/to/WasteManagementSystem/DesktopApplication</code></pre>
+            <p>Replace the path with the folder where you downloaded or cloned the repository.</p>
 
             <h3>3. Run The App</h3>
             <pre><code>./run.sh</code></pre>
-            <p>This runs the packaged JAR file. The Swing desktop window opens.</p>
+            <p>This runs the packaged JAR file. The Swing desktop window opens. On Windows, run <code>run.bat</code> from this same folder.</p>
 
             <h3>4. Rebuild If Code Changes</h3>
             <pre><code>./build.sh</code></pre>
-            <p>This compiles the Java source files and recreates <code>dist/WasteManagementSystem.jar</code>.</p>
+            <p>This compiles the Java source files and recreates <code>dist/WasteManagementSystem.jar</code>. On Windows, run <code>build.bat</code>.</p>
         </section>
 
         <section class="section" id="swing-start">
