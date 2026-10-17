@@ -34,7 +34,10 @@ public class ReportManager {
         }
     }
 
-    public ReportRow getUserReport(String username, LocalDate from, LocalDate to) throws SQLException {
+    public ReportRow getUserReport(String username, LocalDate from, LocalDate to, AppUser actor) throws SQLException {
+        if (!actor.isAdmin() && !actor.getUsername().equals(username)) {
+            throw new SQLException("Members can only view their own report.");
+        }
         String sql = "SELECT u.display_name, "
                 + "COALESCE(SUM(CASE WHEN w.waste_type='Organic' THEN w.quantity ELSE 0 END),0), "
                 + "COALESCE(SUM(CASE WHEN w.waste_type='Recyclable' THEN w.quantity ELSE 0 END),0), "
@@ -57,7 +60,8 @@ public class ReportManager {
         }
     }
 
-    public List<ReportRow> getAllUserReports(LocalDate from, LocalDate to) throws SQLException {
+    public List<ReportRow> getAllUserReports(LocalDate from, LocalDate to, AppUser actor) throws SQLException {
+        requireAdmin(actor);
         List<ReportRow> reports = new ArrayList<>();
         String sql = "SELECT u.display_name, "
                 + "COALESCE(SUM(CASE WHEN w.waste_type='Organic' THEN w.quantity ELSE 0 END),0), "
@@ -81,7 +85,8 @@ public class ReportManager {
         return reports;
     }
 
-    public List<ReportRow> getAreaReports(LocalDate from, LocalDate to) throws SQLException {
+    public List<ReportRow> getAreaReports(LocalDate from, LocalDate to, AppUser actor) throws SQLException {
+        requireAdmin(actor);
         List<ReportRow> reports = new ArrayList<>();
         String sql = "SELECT location, "
                 + "COALESCE(SUM(CASE WHEN waste_type='Organic' THEN quantity ELSE 0 END),0), "
@@ -99,5 +104,9 @@ public class ReportManager {
             }
         }
         return reports;
+    }
+
+    private static void requireAdmin(AppUser actor) throws SQLException {
+        if (!actor.isAdmin()) throw new SQLException("Only an administrator can view organization-wide reports.");
     }
 }

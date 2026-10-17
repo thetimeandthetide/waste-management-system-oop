@@ -18,8 +18,9 @@ RUN ON macOS/Linux
 1. Start MySQL Server.
 2. From this folder run ./build.sh and then ./run.sh.
 
-On first launch the app creates waste_management_db, app_users and waste, applies
-safe additive schema migrations, and seeds the 13 member accounts plus one admin.
+On first launch the app creates waste_management_db, app_users, waste,
+announcements and announcement_reads, applies safe additive schema migrations,
+and seeds the 13 member accounts plus one admin.
 The default MySQL settings are localhost:3306, database waste_management_db,
 username root, and an empty password. Set environment variables before launch
 to override them: WASTE_DB_SERVER, WASTE_DB_NAME, WASTE_DB_USER, WASTE_DB_PASSWORD.
@@ -45,5 +46,7 @@ SELECT * FROM waste ORDER BY collected_at DESC;
 SELECT username, display_name, assigned_area, role FROM app_users;
 
 Reports are calculated from completed rows in waste, not maintained in one table
-per user. The complete current implementation walkthrough and limitations are in
+per user. Admins can broadcast announcements; members see unread notices and
+read receipts in the application inbox. Notices are not real-time push or direct
+two-way chat. The implementation walkthrough and limitations are in
 ROLE_REPORTS_VIVA_ADDENDUM.md.

@@ -2,7 +2,7 @@ WASTE MANAGEMENT SYSTEM - VIVA QUICK GUIDE
 ==========================================
 
 The current implementation is a Java Swing desktop application. Main initializes
-MySQL, LoginFrame authenticates a user, and WasteManagementGUI shows role-filtered
+MySQL in a SwingWorker, LoginFrame authenticates a user, and WasteManagementGUI shows role-filtered
 record and report workspaces. JDBC and MySQL Connector/J connect the Java managers
 to MySQL. For the full source-by-source walkthrough, read
 CODE_STUDY_PACK.md and ROLE_REPORTS_VIVA_ADDENDUM.md.
@@ -23,6 +23,8 @@ IMPORTANT CURRENT BEHAVIOR
   contribution. Area totals follow the actual collection location.
 - Reports are computed from the waste table; there is no separate report table
   per person, so totals stay in sync with the source records.
+- Admin can broadcast announcements; members have an inbox and per-notice read
+  receipts. This is one-way messaging, not real-time push or two-way chat.
 
 OOP EXPLANATION
 1. Classes/objects: Waste subclasses model collection records; AppUser models the
@@ -37,14 +39,15 @@ OOP EXPLANATION
 
 SHORT PRESENTATION FLOW
 1. Introduce the problem and explain that this is a desktop tool, not a website.
-2. Explain the flow: Main -> DatabaseManager -> LoginFrame -> role-aware GUI ->
+2. Explain the flow: Main/SwingWorker -> DatabaseManager -> LoginFrame -> role-aware GUI ->
    manager/DAO -> JDBC -> MySQL.
 3. Show a member view and explain limited access.
 4. Add a dated record; show how actual area and assigned territory determine
    assigned vs bonus contribution.
 5. Explain invalid vs completed and why only completed entries count in reports.
 6. Sign in as admin and show overall, individual, and area reports plus CSV.
-7. Show SQL data if time permits; close with limitations and next steps.
+7. Show the announcement inbox and a member read receipt.
+8. Show SQL data if time permits; close with limitations and next steps.
 
 DEMO SAFETY
 - Use throwaway test rows; deleting a record is permanent.

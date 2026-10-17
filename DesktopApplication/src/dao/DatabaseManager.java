@@ -72,9 +72,22 @@ public class DatabaseManager {
                 + "CHECK (waste_type IN ('Organic','Recyclable','Hazardous')), "
                 + "CHECK (status IN ('PENDING','COMPLETED','INVALID')), "
                 + "CHECK (quantity > 0)) ENGINE=InnoDB";
+        String announcementSql = "CREATE TABLE IF NOT EXISTS announcements ("
+                + "id INT AUTO_INCREMENT PRIMARY KEY, title VARCHAR(120) NOT NULL, "
+                + "message TEXT NOT NULL, created_by VARCHAR(40) NOT NULL, "
+                + "created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP, "
+                + "CONSTRAINT fk_announcement_author FOREIGN KEY (created_by) REFERENCES app_users(username)) ENGINE=InnoDB";
+        String readSql = "CREATE TABLE IF NOT EXISTS announcement_reads ("
+                + "announcement_id INT NOT NULL, username VARCHAR(40) NOT NULL, "
+                + "read_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP, "
+                + "PRIMARY KEY (announcement_id, username), "
+                + "CONSTRAINT fk_announcement_read_announcement FOREIGN KEY (announcement_id) REFERENCES announcements(id) ON DELETE CASCADE, "
+                + "CONSTRAINT fk_announcement_read_user FOREIGN KEY (username) REFERENCES app_users(username) ON DELETE CASCADE) ENGINE=InnoDB";
         try (Connection connection = getConnection(); Statement statement = connection.createStatement()) {
             statement.executeUpdate(usersSql);
             statement.executeUpdate(wasteSql);
+            statement.executeUpdate(announcementSql);
+            statement.executeUpdate(readSql);
         }
     }
 

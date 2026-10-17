@@ -129,7 +129,9 @@
 │   │   ├── AuthenticationManager.java
 │   │   ├── PasswordHasher.java
 │   │   ├── WasteManager.java
-│   │   └── ReportManager.java
+│   │   ├── ReportManager.java
+│   │   └── AnnouncementManager.java
+│   ├── model/Announcement.java
 │   ├── gui
 │   │   ├── LoginFrame.java
 │   │   └── WasteManagementGUI.java
@@ -180,8 +182,8 @@
                 </article>
                 <article class="code-card">
                     <h3>Table</h3>
-                    <pre><code>app_users + waste</code></pre>
-                    <p><code>app_users</code> stores accounts and roles; <code>waste</code> stores collection records.</p>
+                    <pre><code>app_users + waste + announcements + announcement_reads</code></pre>
+                    <p>Accounts, collection records, admin broadcasts, and per-member read receipts are stored separately.</p>
                 </article>
             </div>
             <div class="table-card">
@@ -314,8 +316,8 @@ CREATE TABLE IF NOT EXISTS</code></pre>
                 <p><strong>Meaning:</strong> Updates a selected record using its ID.</p>
                 <pre><code>deleteWaste(int id)</code></pre>
                 <p><strong>Meaning:</strong> Deletes one record by ID.</p>
-                <pre><code>markAsCollected(int id)</code></pre>
-                <p><strong>Meaning:</strong> Changes only the status column to Collected.</p>
+                <pre><code>markCompleted(int id, AppUser actor)</code></pre>
+                <p><strong>Meaning:</strong> Changes an eligible PENDING record to COMPLETED; the data-access method rejects non-admin callers.</p>
                 <pre><code>createWasteFromResultSet(ResultSet resultSet)</code></pre>
                 <p><strong>Meaning:</strong> Converts a database row into the correct Java object type.</p>
             </details>
@@ -332,7 +334,7 @@ CREATE TABLE IF NOT EXISTS</code></pre>
                 <pre><code>createTablePanel()</code></pre>
                 <p><strong>Meaning:</strong> Builds the JTable that displays database records.</p>
                 <pre><code>createButtonPanel()</code></pre>
-                <p><strong>Meaning:</strong> Builds Add, View All, Update, Delete, Search, Mark Collected, and Clear buttons.</p>
+                <p><strong>Meaning:</strong> Builds role-appropriate Add, Update, Mark Invalid, Mark Completed, Delete, Search, Reports, Announcements, Logout, and Clear controls.</p>
                 <pre><code>addButton.addActionListener(event -&gt; addWaste());</code></pre>
                 <p><strong>Meaning:</strong> This is Swing event handling. When the button is clicked, addWaste() runs.</p>
                 <pre><code>createWasteObject(int id)</code></pre>
@@ -352,8 +354,8 @@ CREATE TABLE IF NOT EXISTS</code></pre>
                 <p><strong>Meaning:</strong> Starts Swing safely on the Event Dispatch Thread, which is the correct thread for GUI work.</p>
                 <pre><code>DatabaseManager.initializeDatabase();</code></pre>
                 <p><strong>Meaning:</strong> Makes sure MySQL database and table exist before showing the GUI.</p>
-                <pre><code>new WasteManagementGUI().setVisible(true);</code></pre>
-                <p><strong>Meaning:</strong> Creates and displays the desktop window.</p>
+                <pre><code>new LoginFrame().setVisible(true);</code></pre>
+                <p><strong>Meaning:</strong> Shows the sign-in window after background database initialization. Successful sign-in creates <code>WasteManagementGUI(user)</code>.</p>
                 <pre><code>catch (SQLException exception)</code></pre>
                 <p><strong>Meaning:</strong> If MySQL is not running or login fails, the app shows an error dialog.</p>
             </details>
@@ -361,10 +363,9 @@ CREATE TABLE IF NOT EXISTS</code></pre>
             <details>
                 <summary>sql/setup.sql</summary>
                 <p><strong>Purpose:</strong> Manual SQL setup file for teachers or manual database testing.</p>
-                <pre><code>DROP DATABASE IF EXISTS waste_management_db;
-CREATE DATABASE waste_management_db;
+                <pre><code>CREATE DATABASE IF NOT EXISTS waste_management_db;
 USE waste_management_db;</code></pre>
-                <p><strong>Meaning:</strong> Recreates the database from scratch.</p>
+                <p><strong>Meaning:</strong> Selects the application database without deleting existing records.</p>
                 <pre><code>CREATE TABLE IF NOT EXISTS waste (...)</code></pre>
                 <p><strong>Meaning:</strong> Creates the waste table structure.</p>
                 <pre><code>INSERT INTO waste (...)</code></pre>

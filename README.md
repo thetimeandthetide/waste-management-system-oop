@@ -21,7 +21,7 @@ Requirements: Java 8 or newer, MySQL Server, and the bundled `lib/mysql-connecto
 
 On Windows, run `build.bat`, then `run.bat` from Command Prompt in `DesktopApplication`.
 
-At first startup the application creates `waste_management_db`, creates or migrates its tables, and seeds the administrator and 13 member accounts. Set `WASTE_ADMIN_INITIAL_PASSWORD` privately before the first launch to initialize the admin; after the admin row exists, this variable is no longer needed. Data stays in the MySQL server configured for that machine. The default connection is `localhost`, user `root`, empty password. Override it without editing source:
+At first startup the application creates `waste_management_db`, creates or migrates its tables, and seeds the administrator and 13 member accounts. It shows a startup status window while MySQL setup runs in a background `SwingWorker`. Set `WASTE_ADMIN_INITIAL_PASSWORD` privately before the first launch to initialize the admin; after the admin row exists, this variable is no longer needed. Data stays in the MySQL server configured for that machine. The default connection is `localhost`, user `root`, empty password. Override it without editing source:
 
 ```text
 WASTE_DB_SERVER=jdbc:mysql://localhost:3306/
@@ -50,7 +50,7 @@ SELECT id, waste_type, quantity, location, status, collected_at, collected_by FR
 SELECT username, display_name, assigned_area, role FROM app_users;
 ```
 
-Reports are calculated from completed records in `waste`; per-person and per-area report tables are intentionally not duplicated. This keeps totals current and avoids stale summary rows.
+Reports are calculated from completed records in `waste`; per-person and per-area report tables are intentionally not duplicated. This keeps totals current and avoids stale summary rows. The admin can broadcast announcements; members can see unread notices and read receipts in their inbox. Announcements are not real-time push or two-way chat.
 
 ## Viva website
 

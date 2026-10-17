@@ -10,7 +10,7 @@ It is a desktop-only Java Swing application. `Main` initializes MySQL and opens 
 
 - `src/main/Main.java`: Java entry point; initializes schema, then opens the login window on Swing's Event Dispatch Thread.
 - `src/gui/LoginFrame.java`: username/password form, login button event, calls authentication, passes the authenticated user to the main GUI.
-- `src/gui/WasteManagementGUI.java`: builds the role-aware Swing dashboard, record form/table, reports, date filters, chart, CSV export, validation, confirmation dialogs, and button event listeners.
+- `src/gui/WasteManagementGUI.java`: builds the role-aware Swing dashboard, record form/table, reports, date filters, chart, CSV export, announcements inbox, validation, confirmation dialogs, and button event listeners.
 - `src/model/Waste.java`: abstract waste entity with private common data and accessors; includes collector, record author, collected time, and invalid reason.
 - `src/model/OrganicWaste.java`, `RecyclableWaste.java`, `HazardousWaste.java`: concrete subclasses implementing `getWasteCategory()`.
 - `src/model/AppUser.java`: authenticated identity, role, and assigned territory passed through the app.
@@ -21,6 +21,7 @@ It is a desktop-only Java Swing application. `Main` initializes MySQL and opens 
 - `src/dao/AuthenticationManager.java`: looks up a username and verifies its password hash.
 - `src/dao/WasteManager.java`: prepared-statement CRUD and record-state changes; applies the app's role/ownership restrictions.
 - `src/dao/ReportManager.java`: parameterized aggregate queries for member, area, and personal reports.
+- `src/model/Announcement.java` and `src/dao/AnnouncementManager.java`: announcement data, admin-only publishing, member inbox queries, unread counts, and per-member read receipts.
 - `sql/setup.sql`: non-destructive SQL schema setup for a database administrator who wants to inspect/create the schema manually.
 - `lib/mysql-connector-j.jar`: JDBC driver, required when compiling/running.
 - `build.sh` / `build.bat`: compile source and produce `dist/WasteManagementSystem.jar`.
@@ -28,7 +29,7 @@ It is a desktop-only Java Swing application. `Main` initializes MySQL and opens 
 
 ## Data model and SQL
 
-`app_users` stores `id`, unique `username`, display name, role, assigned area, password hash, salt, and active state. `waste` stores `id`, type, description, quantity in kg, actual location, status, record author (`created_by`), credited collector (`collected_by`), collection timestamp, and optional invalid reason. Foreign keys connect authors/collectors to `app_users` on a fresh schema. The startup migration adds needed columns to an older waste table without dropping existing records.
+`app_users` stores the login identity, role, assigned area, password hash, salt, and active state. `waste` stores type, description, quantity in kg, actual location, status, record author (`created_by`), credited collector (`collected_by`), collection timestamp, and optional invalid reason. `announcements` stores admin broadcasts, and `announcement_reads` records each member's read status. Foreign keys connect these records to users; the startup migration adds tables/columns without dropping waste records.
 
 `PreparedStatement` binds runtime values to `?` placeholders. This separates SQL syntax from user input and prevents ordinary input from changing the query structure. `ResultSet` reads the rows returned by `SELECT`. `try`-with-resources closes JDBC connections, statements, and results when a method finishes.
 
@@ -58,10 +59,13 @@ There is one normalized record table, not one table for each person. Reports use
 | Mark completed | No | Yes |
 | Delete | No | Yes, with confirmation in GUI |
 | Reports | Own contribution only | Overall, all 13 members, and all areas |
+| Announcements | Read broadcast notices; unread status clears when opened | Publish notices to all members |
 
 Members are seeded with their assigned areas: Aman Fayad/Civil canteen, Joseph Fidel/Mech front, Nivedya/Dhwani, Ayshwaria/Gazebo, Nida/CS front, Arya/Golden walkway, Ahban/Electrical gate, Sidharth/Indoor court, Heera/Archie corner, Keerthana/College front, Farzeen/DJ hall, Merin/CGPU hall, and Shyam/CETAA hall. Usernames are lowercase first names.
 
 The actual `location` is where collection happened. If it differs from the member's assigned area, that amount contributes to their personal bonus total, while the area report credits the actual collection location. The attributed collector (`collected_by`) and record author (`created_by`) are distinct so an admin can enter a record for a member without claiming to have collected it.
+
+Announcements are administrator-to-member broadcasts, not private replies. Each member has an inbox and a per-notice read receipt. The unread count refreshes when the inbox is opened; this is not a real-time push notification service.
 
 ## Timestamp and report interpretation
 
@@ -83,7 +87,7 @@ The dashboard's charts are drawn in Swing using Java2D; no charting framework or
 4. Sign out and sign in as admin. Show overall/member/area report, date range, category totals, chart, and CSV export.
 5. Show a pending record and demonstrate the admin-only complete/delete actions (prefer a throwaway record for delete). Explain completion is what places a record in report calculations.
 6. Optionally show `SELECT ... FROM waste` in MySQL Workbench/terminal to demonstrate persistence and the saved timestamp.
-7. End with the separation: Swing UI -> manager/DAO -> JDBC Connector/J -> MySQL; mention that team machines need one shared configured MySQL host for shared data.
+7. Open Announcements and explain admin broadcasts and member read receipts. End with Swing UI -> manager/DAO -> JDBC Connector/J -> MySQL; mention that team machines need one shared configured MySQL host for shared data.
 
 ## Likely viva questions
 

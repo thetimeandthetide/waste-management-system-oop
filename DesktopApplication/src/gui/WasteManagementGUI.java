@@ -1,7 +1,9 @@
 package gui;
 
 import dao.ReportManager;
+import dao.AnnouncementManager;
 import dao.WasteManager;
+import model.Announcement;
 import model.AppUser;
 import model.ReportRow;
 import model.ReportSummary;
@@ -13,6 +15,7 @@ import javax.swing.JComboBox;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
+import javax.swing.JTextArea;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
@@ -30,9 +33,10 @@ import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.FlowLayout;
 import java.awt.GridLayout;
-import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileWriter;
+import java.io.BufferedWriter;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.sql.SQLException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -58,8 +62,14 @@ public class WasteManagementGUI extends JFrame {
     private final AppUser user;
     private final WasteManager wasteManager = new WasteManager();
     private final ReportManager reportManager = new ReportManager();
+    private final AnnouncementManager announcementManager = new AnnouncementManager();
     private final CardLayout pageLayout = new CardLayout();
     private final JPanel pageHost = new JPanel(pageLayout);
+    private JButton announcementsNavigation;
+    private JTable announcementsTable;
+    private DefaultTableModel announcementsModel;
+    private JTextArea announcementDetails;
+    private List<Announcement> announcements = new ArrayList<>();
 
     private JTextField descriptionField;
     private JTextField quantityField;
@@ -102,12 +112,14 @@ public class WasteManagementGUI extends JFrame {
         pageHost.setBackground(PAGE);
         pageHost.add(createRecordsPage(), "records");
         pageHost.add(createReportsPage(), "reports");
+        pageHost.add(createAnnouncementsPage(), "announcements");
         add(createSidebar(), BorderLayout.WEST);
         add(createTopBar(), BorderLayout.NORTH);
         add(pageHost, BorderLayout.CENTER);
 
         refreshRecords();
         refreshReports();
+        refreshAnnouncements();
     }
 
     private JPanel createSidebar() {
@@ -124,13 +136,19 @@ public class WasteManagementGUI extends JFrame {
         navigation.setOpaque(false);
         JButton records = navButton("Waste records");
         JButton reports = navButton(user.isAdmin() ? "Reports dashboard" : "My progress");
+        announcementsNavigation = navButton("Announcements");
         records.addActionListener(event -> pageLayout.show(pageHost, "records"));
         reports.addActionListener(event -> {
             refreshReports();
             pageLayout.show(pageHost, "reports");
         });
+        announcementsNavigation.addActionListener(event -> {
+            refreshAnnouncements();
+            pageLayout.show(pageHost, "announcements");
+        });
         navigation.add(records);
         navigation.add(reports);
+        navigation.add(announcementsNavigation);
 
         JLabel footer = new JLabel("Waste collection tracker", SwingConstants.CENTER);
         footer.setForeground(new Color(211, 205, 235));
@@ -294,6 +312,102 @@ public class WasteManagementGUI extends JFrame {
         else reportContent.add(createPersonalReport(), BorderLayout.CENTER);
         page.add(reportContent, BorderLayout.CENTER);
         return page;
+    }
+
+    private JPanel createAnnouncementsPage() {
+        JPanel page = pagePanel(new BorderLayout(16, 16));
+        JPanel heading = new JPanel(new BorderLayout(12, 0));
+        heading.setOpaque(false);
+        heading.add(heading("Announcements", "Updates from the Clean CET administrator."), BorderLayout.WEST);
+        if (user.isAdmin()) {
+            JButton publish = button("New announcement", true);
+            publish.addActionListener(event -> publishAnnouncement());
+            heading.add(publish, BorderLayout.EAST);
+        }
+        page.add(heading, BorderLayout.NORTH);
+
+        JPanel content = new JPanel(new BorderLayout(14, 0));
+        content.setOpaque(false);
+        announcementsModel = readOnlyModel(new String[]{"Title", "From", "Date", "Status"});
+        announcementsTable = new JTable(announcementsModel);
+        styleTable(announcementsTable);
+        announcementsTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        announcementsTable.getSelectionModel().addListSelectionListener(event -> {
+            if (!event.getValueIsAdjusting() && announcementsTable.getSelectedRow() >= 0) {
+                showAnnouncement(announcementsTable.convertRowIndexToModel(announcementsTable.getSelectedRow()));
+            }
+        });
+        JPanel list = card(new BorderLayout(0, 10));
+        list.add(sectionTitle("Message inbox"), BorderLayout.NORTH);
+        list.add(new JScrollPane(announcementsTable), BorderLayout.CENTER);
+        JPanel details = card(new BorderLayout(0, 10));
+        details.add(sectionTitle("Announcement details"), BorderLayout.NORTH);
+        announcementDetails = new JTextArea();
+        announcementDetails.setEditable(false);
+        announcementDetails.setLineWrap(true);
+        announcementDetails.setWrapStyleWord(true);
+        announcementDetails.setFont(new Font("SansSerif", Font.PLAIN, 13));
+        announcementDetails.setForeground(INK);
+        announcementDetails.setBorder(new EmptyBorder(10, 10, 10, 10));
+        details.add(new JScrollPane(announcementDetails), BorderLayout.CENTER);
+        content.add(list, BorderLayout.CENTER);
+        content.add(details, BorderLayout.EAST);
+        details.setPreferredSize(new Dimension(330, 0));
+        page.add(content, BorderLayout.CENTER);
+        return page;
+    }
+
+    private void refreshAnnouncements() {
+        if (announcementsModel == null) return;
+        try {
+            announcements = announcementManager.getAnnouncements(user);
+            announcementsModel.setRowCount(0);
+            for (Announcement announcement : announcements) {
+                announcementsModel.addRow(new Object[]{announcement.getTitle(), announcement.getAuthor(),
+                        announcement.getCreatedAt().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")),
+                        user.isAdmin() ? "Published" : announcement.isRead() ? "Read" : "New"});
+            }
+            announcementsNavigation.setText("Announcements (" + announcementManager.getUnreadCount(user) + ")");
+            if (announcements.isEmpty()) announcementDetails.setText("No announcements yet.");
+        } catch (SQLException exception) {
+            showError("Could not load announcements: " + exception.getMessage());
+        }
+    }
+
+    private void showAnnouncement(int index) {
+        if (index < 0 || index >= announcements.size()) return;
+        Announcement announcement = announcements.get(index);
+        announcementDetails.setText(announcement.getTitle() + "\n\n"
+                + announcement.getMessage() + "\n\nFrom: " + announcement.getAuthor()
+                + "\nPosted: " + announcement.getCreatedAt().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")));
+        if (!user.isAdmin() && !announcement.isRead()) {
+            try {
+                announcementManager.markRead(announcement.getId(), user);
+                refreshAnnouncements();
+                announcementsTable.setRowSelectionInterval(index, index);
+            } catch (SQLException exception) {
+                showError("Could not mark announcement as read: " + exception.getMessage());
+            }
+        }
+    }
+
+    private void publishAnnouncement() {
+        JTextField title = input(new JTextField());
+        JTextArea message = new JTextArea(6, 28);
+        message.setLineWrap(true);
+        message.setWrapStyleWord(true);
+        JPanel form = new JPanel(new BorderLayout(0, 8));
+        form.add(labeled("Title", title), BorderLayout.NORTH);
+        form.add(labeled("Message", new JScrollPane(message)), BorderLayout.CENTER);
+        if (JOptionPane.showConfirmDialog(this, form, "New announcement",
+                JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE) != JOptionPane.OK_OPTION) return;
+        try {
+            announcementManager.publish(title.getText(), message.getText(), user);
+            refreshAnnouncements();
+            showMessage("Announcement sent to all users.");
+        } catch (SQLException exception) {
+            showError(exception.getMessage());
+        }
     }
 
     private JPanel createReportHeading() {
@@ -556,13 +670,13 @@ public class WasteManagementGUI extends JFrame {
             recordCountValue.setText(String.valueOf(summary.getCompletedRecords()));
 
             if (user.isAdmin()) {
-                currentMemberReports = reportManager.getAllUserReports(from, to);
-                currentAreaReports = reportManager.getAreaReports(from, to);
+                currentMemberReports = reportManager.getAllUserReports(from, to, user);
+                currentAreaReports = reportManager.getAreaReports(from, to, user);
                 fillMemberRows();
                 fillAreaRows();
                 areaChart.setReports(currentAreaReports);
             } else {
-                ReportRow own = reportManager.getUserReport(user.getUsername(), from, to);
+                ReportRow own = reportManager.getUserReport(user.getUsername(), from, to, user);
                 personalReportModel.setRowCount(0);
                 personalReportModel.addRow(new Object[]{"Assigned area", kg(own.getAssignedKg()), "-", "-", "-", "-"});
                 personalReportModel.addRow(new Object[]{"Additional / bonus", kg(own.getBonusKg()), "-", "-", "-", "-"});
@@ -593,22 +707,32 @@ public class WasteManagementGUI extends JFrame {
         JFileChooser chooser = new JFileChooser();
         chooser.setSelectedFile(new File(user.isAdmin() ? "clean-cet-waste-report.csv" : user.getUsername() + "-waste-report.csv"));
         if (chooser.showSaveDialog(this) != JFileChooser.APPROVE_OPTION) return;
-        try (BufferedWriter writer = new BufferedWriter(new FileWriter(chooser.getSelectedFile()))) {
+        try {
+            LocalDate from = LocalDate.parse(fromField.getText().trim());
+            LocalDate to = LocalDate.parse(toField.getText().trim());
+            if (from.isAfter(to)) throw new IllegalArgumentException("From date must be on or before To date.");
+            try (BufferedWriter writer = Files.newBufferedWriter(chooser.getSelectedFile().toPath(), StandardCharsets.UTF_8)) {
+                writer.write("Report period," + csv(from.toString()) + "," + csv(to.toString()) + "\n\n");
             if (user.isAdmin()) {
                 writer.write("Member,Total kg,Organic kg,Recyclable kg,Hazardous kg,Assigned area kg,Bonus kg,Completed records\n");
-                for (ReportRow row : currentMemberReports) writer.write(csv(row.getLabel()) + "," + row.getTotalKg() + "," + row.getOrganic() + "," + row.getRecyclable() + "," + row.getHazardous() + "," + row.getAssignedKg() + "," + row.getBonusKg() + "," + row.getRecords() + "\n");
+                for (ReportRow row : reportManager.getAllUserReports(from, to, user)) writer.write(csv(row.getLabel()) + "," + row.getTotalKg() + "," + row.getOrganic() + "," + row.getRecyclable() + "," + row.getHazardous() + "," + row.getAssignedKg() + "," + row.getBonusKg() + "," + row.getRecords() + "\n");
                 writer.write("\nArea,Total kg,Organic kg,Recyclable kg,Hazardous kg,Completed records\n");
-                for (ReportRow row : currentAreaReports) writer.write(csv(row.getLabel()) + "," + row.getTotalKg() + "," + row.getOrganic() + "," + row.getRecyclable() + "," + row.getHazardous() + "," + row.getRecords() + "\n");
+                for (ReportRow row : reportManager.getAreaReports(from, to, user)) writer.write(csv(row.getLabel()) + "," + row.getTotalKg() + "," + row.getOrganic() + "," + row.getRecyclable() + "," + row.getHazardous() + "," + row.getRecords() + "\n");
             } else {
                 writer.write("Member,Total kg,Organic kg,Recyclable kg,Hazardous kg,Assigned area kg,Bonus kg,Completed records\n");
-                ReportRow row = reportManager.getUserReport(user.getUsername(), LocalDate.parse(fromField.getText()), LocalDate.parse(toField.getText()));
+                ReportRow row = reportManager.getUserReport(user.getUsername(), from, to, user);
                 writer.write(csv(user.getDisplayName()) + "," + row.getTotalKg() + "," + row.getOrganic() + "," + row.getRecyclable() + "," + row.getHazardous() + "," + row.getAssignedKg() + "," + row.getBonusKg() + "," + row.getRecords() + "\n");
+            }
             }
             showMessage("Report exported successfully.");
         } catch (Exception exception) { showError("Could not export report: " + exception.getMessage()); }
     }
 
-    private static String csv(String value) { return "\"" + value.replace("\"", "\"\"") + "\""; }
+    private static String csv(String value) {
+        String safe = value == null ? "" : value;
+        if (safe.matches("^[\\s]*[=+@\\-].*")) safe = "'" + safe;
+        return "\"" + safe.replace("\"", "\"\"") + "\"";
+    }
     private static String kg(double amount) { return String.format(java.util.Locale.ROOT, "%.2f kg", amount); }
 
     private JPanel pagePanel(java.awt.LayoutManager layout) {

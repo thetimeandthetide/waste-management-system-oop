@@ -49,21 +49,23 @@
 
         <section class="section" id="current-build">
             <h2>Current Build: Every Important File</h2>
-            <p>Java starts at <code>Main</code>, initializes MySQL, opens the login screen, and after successful authentication opens a role-aware dashboard. Button listeners call GUI handlers; handlers validate input and call DAO/manager classes; those classes execute prepared SQL through JDBC.</p>
+            <p>Java starts at <code>Main</code>, initializes MySQL in a background <code>SwingWorker</code>, opens the login screen, and after authentication opens a role-aware dashboard. Button listeners call GUI handlers; handlers validate input and call manager classes, which execute prepared SQL through JDBC.</p>
             <div class="walk-table">
-                <div><code>main/Main.java</code></div><p>The Java entry point. It checks/creates the schema before scheduling <code>LoginFrame</code> on Swing's Event Dispatch Thread. An SQL error is caught and shown rather than silently ignored.</p>
+                <div><code>main/Main.java</code></div><p>The Java entry point. It shows a startup status window and initializes the database in <code>SwingWorker.doInBackground()</code> so the Swing Event Dispatch Thread stays responsive. It opens <code>LoginFrame</code> after startup succeeds and reports connection errors in a dialog.</p>
                 <div><code>gui/LoginFrame.java</code></div><p>Creates the Swing username/password form. The login button's ActionListener calls <code>AuthenticationManager</code>. On success, it passes the authenticated <code>AppUser</code> object to <code>WasteManagementGUI</code>; on failure, it shows an error.</p>
                 <div><code>dao/AuthenticationManager.java</code></div><p>Finds an active username in <code>app_users</code>, retrieves its stored salt/hash, asks <code>PasswordHasher</code> to verify the entered password, and returns an identity object only when valid.</p>
                 <div><code>dao/PasswordHasher.java</code></div><p>Uses PBKDF2WithHmacSHA256 with a per-account salt and repeated key derivation. It compares hash bytes using constant-time comparison and does not store plaintext passwords.</p>
                 <div><code>model/AppUser.java</code></div><p>Holds the authenticated username, display name, role, and assigned area. Passing this object gives the GUI and DAO the identity/context needed to scope data and permissions.</p>
-                <div><code>gui/WasteManagementGUI.java</code></div><p>Builds the report-dashboard-style Swing interface: navigation, record form/table, date filters, totals, member and area breakdowns, chart, and CSV export. ActionListeners connect Add, Update, Invalid, Complete, Delete, Search, report refresh, and sign-out controls to methods. UI controls differ by role; database operations still enforce role rules.</p>
+                <div><code>gui/WasteManagementGUI.java</code></div><p>Builds the Swing interface: navigation, record form/table, date filters, totals, member and area breakdowns, chart, CSV export, announcements inbox, and logout. ActionListeners connect controls to handlers. Record permissions and report privacy are enforced by manager methods, not only by hiding buttons.</p>
                 <div><code>model/Waste.java</code></div><p>Abstract parent for waste types. Private shared fields include ID, category-related details, description, quantity, actual location, status, author, credited collector, collection time, and invalid reason. Getters/setters demonstrate encapsulation; <code>getWasteCategory()</code> is abstract.</p>
                 <div><code>model/OrganicWaste.java</code>, <code>RecyclableWaste.java</code>, <code>HazardousWaste.java</code></div><p>Child classes inherit shared record fields and override <code>getWasteCategory()</code>. A method call through a <code>Waste</code> reference returns the category for its concrete object, demonstrating polymorphism.</p>
                 <div><code>model/ReportSummary.java</code></div><p>Small data object for top-level totals, category quantities, and counts returned by report queries.</p>
                 <div><code>model/ReportRow.java</code></div><p>Data object for a row in member-wise or area-wise tables, including category splits and assigned/bonus totals where relevant.</p>
+                <div><code>model/Announcement.java</code></div><p>Immutable data object carrying the announcement title/message, author, timestamp, and this account's read state.</p>
                 <div><code>dao/DatabaseManager.java</code></div><p>Reads database settings from system properties/environment, opens Connector/J connections with <code>DriverManager</code>, creates the database/tables, adds missing columns without dropping old data, normalizes older statuses, and seeds the admin plus 13 members if absent.</p>
                 <div><code>dao/WasteManager.java</code></div><p>Owns record SQL and role/ownership checks. Prepared statements add/read/update/delete rows and perform state transitions. Members are limited to their own authored/credited records; only admin can complete/delete. Invalid entries are retained, not immediately erased.</p>
                 <div><code>dao/ReportManager.java</code></div><p>Uses parameterized date filters and SQL aggregates (<code>SUM</code>, <code>COUNT</code>, grouping/joins) to calculate completed totals, category splits, member reports, area reports, and personal assigned-vs-bonus figures.</p>
+                <div><code>dao/AnnouncementManager.java</code></div><p>Allows only an administrator to publish, lists notices for the signed-in account, counts unread messages, and records when a member opens a notice.</p>
                 <div><code>sql/setup.sql</code></div><p>Non-destructive schema reference for manual setup. It does not drop a database. Normal startup uses <code>DatabaseManager</code> to create/migrate tables and seed the initial accounts.</p>
                 <div><code>build.sh</code> / <code>build.bat</code></div><p>Compile the Java packages with the bundled Connector/J JAR and package a runnable JAR with the manifest.</p>
                 <div><code>run.sh</code> / <code>run.bat</code></div><p>Start the packaged JAR. MySQL must be running and environment variables must be set first if using non-default credentials.</p>
@@ -71,12 +73,14 @@
             <h3>Current database fields and meanings</h3>
             <pre><code>app_users: username, display_name, assigned_area, role, password_salt,
            password_hash, active
+announcements: id, title, message, created_by, created_at
+announcement_reads: announcement_id, username, read_at
 waste: id, waste_type, description, quantity, location, status,
        created_by, collected_by, collected_at, invalid_reason,
        created_at, updated_at</code></pre>
             <p><code>created_by</code> says who entered the record; <code>collected_by</code> says whose personal contribution is credited. Quantity is kilograms. The actual location is used in area reports. If it differs from the collector's assigned area, it is classified as that member's bonus contribution.</p>
             <h3>Report rules and permissions</h3>
-            <p>Members can add records, update their own pending records, invalidate their own pending records, and see only their own contribution. Admin sees all records and reports and can complete/delete records. Only completed records count in reports; pending and invalid do not. One normalized <code>waste</code> table is the source of truth; SQL computes reports when requested, so there are no separate report tables to synchronize.</p>
+            <p>Members can add records, update/invalidate their own pending records, see only their own contribution, and read admin announcements. Admin sees all records/reports, can complete/delete records, and publish notices. Only completed records count in reports; pending and invalid do not. One normalized <code>waste</code> table is the source of truth; SQL computes reports when requested, so there are no separate report tables to synchronize.</p>
             <h3>JDBC connection and MySQL setup</h3>
             <p>Connector/J is the JDBC driver implementation. <code>DriverManager.getConnection()</code> opens a <code>Connection</code>; <code>PreparedStatement</code> binds values; <code>ResultSet</code> reads SELECT output. Configuration variables are <code>WASTE_DB_SERVER</code>, <code>WASTE_DB_NAME</code>, <code>WASTE_DB_USER</code>, and <code>WASTE_DB_PASSWORD</code>. The default host is localhost, so each teammate's laptop has separate data until all are configured for a common secure MySQL server.</p>
             <pre><code>USE waste_management_db;
@@ -87,7 +91,7 @@ SELECT username, display_name, role, assigned_area FROM app_users;
 SELECT id, waste_type, quantity, location, status, collected_at, collected_by
 FROM waste ORDER BY collected_at DESC;</code></pre>
             <h3>Important limitations to explain honestly</h3>
-            <p>Reports show entered waste weight by category and location, not a measured pollution score. This Swing client applies role checks, but direct database access can bypass client-side authorization; production use needs centralized authorization and protected credentials. The website is a separate learning guide; Firebase does not host the Java desktop app or MySQL database.</p>
+            <p>Reports show entered waste weight by category and location, not a measured pollution score. Announcements are one-way broadcasts with read receipts, not real-time push or two-way chat. This Swing client applies role checks, but direct database access can bypass client-side authorization; production use needs centralized authorization and protected credentials. The website is a separate learning guide; Firebase does not host the Java desktop app or MySQL database.</p>
         </section>
 
         <section class="section" id="run">
@@ -117,12 +121,12 @@ FROM waste ORDER BY collected_at DESC;</code></pre>
                 <p>This is the first method Java runs.</p>
                 <div><code>SwingUtilities.invokeLater(() -&gt; { ... })</code></div>
                 <p>This tells Java to start the GUI on Swing's Event Dispatch Thread. Swing components should be created on this thread.</p>
-                <div><code>DatabaseManager.initializeDatabase();</code></div>
-                <p>Before the window opens, the app creates/checks the database and table.</p>
-                <div><code>WasteManagementGUI gui = new WasteManagementGUI();</code></div>
-                <p>This creates the main GUI object. Since WasteManagementGUI extends JFrame, this object is the desktop window.</p>
-                <div><code>gui.setVisible(true);</code></div>
-                <p>This displays the JFrame on the screen. Without this line, the window exists in memory but is not visible.</p>
+                <div><code>SwingWorker.doInBackground()</code></div>
+                <p>Creates/checks the database off the UI thread so the startup window remains responsive.</p>
+                <div><code>new LoginFrame().setVisible(true)</code></div>
+                <p>Opens the login frame after database initialization succeeds.</p>
+                <div><code>new WasteManagementGUI(user).setVisible(true)</code></div>
+                <p>After successful authentication, creates the dashboard for the authenticated user and displays its JFrame.</p>
             </div>
             <h3>Important Swing Components Used</h3>
             <div class="grid two">
@@ -148,7 +152,7 @@ FROM waste ORDER BY collected_at DESC;</code></pre>
                     <div><code>private String description;</code></div><p>Stores the description entered by the user.</p>
                     <div><code>private double quantity;</code></div><p>Stores quantity in kilograms. double allows decimal values like 12.5.</p>
                     <div><code>private String location;</code></div><p>Stores where the waste is located.</p>
-                    <div><code>private String status;</code></div><p>Stores Pending or Collected.</p>
+                    <div><code>private String status;</code></div><p>Current values are PENDING, COMPLETED, and INVALID.</p>
                     <div><code>public Waste() { }</code></div><p>Default constructor. It allows creating an empty object if needed.</p>
                     <div><code>public Waste(int id, String description, double quantity, String location, String status)</code></div><p>Parameterized constructor. It fills all common fields at object creation time.</p>
                     <div><code>this.id = id;</code></div><p>Assigns the constructor id value to the object's id field.</p>
@@ -213,14 +217,12 @@ FROM waste ORDER BY collected_at DESC;</code></pre>
                     <div><code>USERNAME = "root"; PASSWORD = "";</code></div><p>MySQL login details. Empty password means no password is set for root locally.</p>
                     <div><code>getConnection()</code></div><p>Returns a reusable connection to the project database.</p>
                     <div><code>DriverManager.getConnection(...)</code></div><p>Actually opens the MySQL connection using the Connector/J driver.</p>
-                    <div><code>initializeDatabase()</code></div><p>Runs startup setup: create database, create table, insert starter rows.</p>
-                    <div><code>createDatabaseIfNeeded()</code></div><p>Creates the database only if it does not already exist.</p>
+                    <div><code>initializeDatabase()</code></div><p>Runs startup setup: create/migrate tables and seed missing user accounts. It does not inject sample waste rows.</p>
+                    <div><code>createDatabaseIfNeeded()</code></div><p>In the current source this work is performed by <code>initializeDatabase()</code> using a JDBC connection.</p>
                     <div><code>try (Connection connection = ...)</code></div><p>try-with-resources automatically closes the connection after use.</p>
                     <div><code>CREATE DATABASE IF NOT EXISTS</code></div><p>SQL command that prevents duplicate database errors.</p>
                     <div><code>createWasteTableIfNeeded()</code></div><p>Creates the waste table with id, waste_type, description, quantity, location, status.</p>
-                    <div><code>insertStarterRecordsIfEmpty()</code></div><p>Checks the table count. If empty, inserts three starter records.</p>
-                    <div><code>SELECT COUNT(*) FROM waste</code></div><p>Counts how many rows are already in the table.</p>
-                    <div><code>insertStarterRecord(...)</code></div><p>Helper method to insert one starter row.</p>
+                    <div><code>app_users seeding</code></div><p>Creates the configured admin/member accounts only when each username is absent.</p>
                     <div><code>statement.setString(...)</code></div><p>Fills a ? placeholder in the SQL query.</p>
                     <div><code>statement.executeUpdate()</code></div><p>Runs INSERT, UPDATE, DELETE, CREATE commands.</p>
                 </div>
@@ -232,22 +234,22 @@ FROM waste ORDER BY collected_at DESC;</code></pre>
                     <div><code>package dao;</code></div><p>Places CRUD code in the dao package.</p>
                     <div><code>import model.HazardousWaste; OrganicWaste; RecyclableWaste; Waste;</code></div><p>Imports model classes so database rows can become Java objects.</p>
                     <div><code>import java.util.ArrayList; import java.util.List;</code></div><p>Used to store multiple waste objects.</p>
-                    <div><code>public void addWaste(Waste waste)</code></div><p>Receives any Waste child object and inserts it into MySQL.</p>
+                    <div><code>public void addWaste(Waste waste, AppUser actor, String collectorUsername)</code></div><p>Inserts a timestamped pending record and applies authenticated collector attribution.</p>
                     <div><code>INSERT INTO waste (...)</code></div><p>SQL command used to add a new row.</p>
                     <div><code>VALUES (?, ?, ?, ?, ?)</code></div><p>Question marks are placeholders filled by PreparedStatement.</p>
                     <div><code>waste.getWasteCategory()</code></div><p>Polymorphism: returns Organic, Recyclable, or Hazardous depending on the object.</p>
                     <div><code>waste.getDescription(), getQuantity(), getLocation(), getStatus()</code></div><p>Gets values from private fields using getters.</p>
-                    <div><code>public List&lt;Waste&gt; getAllWaste()</code></div><p>Reads all records and returns them as a list.</p>
+                    <div><code>public List&lt;Waste&gt; getVisibleWaste(AppUser actor, String keyword)</code></div><p>Returns all matching records for an admin or only authored/credited records for a member.</p>
                     <div><code>SELECT * FROM waste ORDER BY id</code></div><p>SQL command to fetch all records sorted by ID.</p>
                     <div><code>while (resultSet.next())</code></div><p>Moves row by row through the database result.</p>
                     <div><code>createWasteFromResultSet(resultSet)</code></div><p>Converts each row into the correct Java object.</p>
-                    <div><code>searchWaste(String keyword)</code></div><p>Searches rows using a word typed by the user.</p>
+                    <div><code>getVisibleWaste(...)</code></div><p>Searches description, location, category, status, or collector while applying role visibility.</p>
                     <div><code>LIKE ?</code></div><p>SQL pattern matching. It finds partial matches.</p>
                     <div><code>"%" + keyword + "%"</code></div><p>Means search for keyword anywhere inside the field.</p>
                     <div><code>updateWaste(Waste waste)</code></div><p>Updates existing row values using the selected ID.</p>
                     <div><code>WHERE id = ?</code></div><p>Makes sure only the selected row is updated.</p>
                     <div><code>deleteWaste(int id)</code></div><p>Deletes one row using its ID.</p>
-                    <div><code>markAsCollected(int id)</code></div><p>Updates only status to Collected.</p>
+                    <div><code>markCompleted(int id, AppUser actor)</code></div><p>Transitions an eligible pending row to COMPLETED after an administrator check.</p>
                     <div><code>resultSet.getInt("id")</code></div><p>Reads the id column from MySQL.</p>
                     <div><code>resultSet.getString("waste_type")</code></div><p>Reads the waste type column.</p>
                     <div><code>if ("Organic".equalsIgnoreCase(wasteType))</code></div><p>Chooses which child object to create from the database value.</p>
@@ -357,7 +359,7 @@ FROM waste ORDER BY collected_at DESC;</code></pre>
                     <div><code>updateWaste()</code></div><p>Reads selected ID, creates updated Waste object, sends it to database.</p>
                     <div><code>deleteWaste()</code></div><p>Reads selected ID and deletes that row from MySQL.</p>
                     <div><code>searchWaste()</code></div><p>Reads search text and displays only matching records.</p>
-                    <div><code>markAsCollected()</code></div><p>Reads selected ID and changes status to Collected.</p>
+                    <div><code>markCompleted(int id, AppUser actor)</code></div><p>Reads the selected ID and changes status to COMPLETED only for an administrator.</p>
                     <div><code>createWasteObject(int id)</code></div><p>Reads form values and creates OrganicWaste, RecyclableWaste, or HazardousWaste.</p>
                     <div><code>Double.parseDouble(quantityField.getText())</code></div><p>Converts text input into a decimal number.</p>
                     <div><code>showWasteInTable(List&lt;Waste&gt; wasteList)</code></div><p>Clears the table and adds one row for each Waste object.</p>
@@ -377,11 +379,8 @@ FROM waste ORDER BY collected_at DESC;</code></pre>
                     <div><code>styleInput(...)</code></div><p>Styles text boxes with font, color, border, padding.</p>
                     <div><code>createButton(String text)</code></div><p>Creates rounded green buttons with hover effect.</p>
                     <div><code>MouseAdapter mouseEntered/mouseExited</code></div><p>Changes button color when mouse hovers over it.</p>
-                    <div><code>GradientPanel.paintComponent(...)</code></div><p>Draws the main background gradient.</p>
-                    <div><code>HeaderPanel.paintComponent(...)</code></div><p>Draws the top rounded gradient header.</p>
-                    <div><code>RoundedPanel.paintComponent(...)</code></div><p>Draws white rounded panels with border.</p>
-                    <div><code>RoundedButton.paintComponent(...)</code></div><p>Draws rounded button background manually.</p>
-                    <div><code>WasteTableRenderer</code></div><p>Controls table row colors, alignment, and category/status colors.</p>
+                    <div><code>AreaChart.paintComponent(...)</code></div><p>Draws the area-wise bar chart using Java2D from report rows.</p>
+                    <div><code>card(...), button(...), styleTable(...)</code></div><p>Small helper methods apply consistent padding, colors, fonts, and read-only tables.</p>
                 </div>
             </details>
         </section>
@@ -405,14 +404,13 @@ FROM waste ORDER BY collected_at DESC;</code></pre>
         <section class="section" id="sql">
             <h2>SQL File: setup.sql</h2>
             <div class="walk-table">
-                <div><code>DROP DATABASE IF EXISTS waste_management_db;</code></div><p>Deletes the old database if it exists. This is for manual reset.</p>
-                <div><code>CREATE DATABASE waste_management_db;</code></div><p>Creates a fresh database.</p>
+                <div><code>CREATE DATABASE IF NOT EXISTS waste_management_db;</code></div><p>Creates the database only when it does not already exist; it does not delete records.</p>
                 <div><code>USE waste_management_db;</code></div><p>Selects that database for the next commands.</p>
                 <div><code>CREATE TABLE IF NOT EXISTS waste (...)</code></div><p>Creates the waste table if it does not exist.</p>
                 <div><code>id INT AUTO_INCREMENT PRIMARY KEY</code></div><p>Creates unique automatic IDs.</p>
                 <div><code>waste_type VARCHAR(50) NOT NULL</code></div><p>Stores type and does not allow empty value.</p>
                 <div><code>quantity DOUBLE NOT NULL</code></div><p>Stores decimal quantity.</p>
-                <div><code>INSERT INTO waste (...)</code></div><p>Adds sample rows to test the app.</p>
+                <div><code>INSERT INTO waste (...)</code></div><p>Not included in setup.sql; add collection records through the desktop application.</p>
             </div>
         </section>
 
@@ -442,7 +440,7 @@ USE waste_management_db;
 SHOW TABLES;
 DESCRIBE waste;
 SELECT * FROM waste;
-SELECT * FROM waste WHERE status = 'Collected';
+SELECT * FROM waste WHERE status = 'COMPLETED';
 SELECT * FROM waste WHERE waste_type = 'Organic';
 exit;</code></pre>
             <h3>One-Line Terminal Check</h3>

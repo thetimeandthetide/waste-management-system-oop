@@ -32,5 +32,26 @@ CREATE TABLE IF NOT EXISTS waste (
     INDEX idx_waste_area (location, status)
 );
 
+CREATE TABLE IF NOT EXISTS announcements (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    title VARCHAR(120) NOT NULL,
+    message TEXT NOT NULL,
+    created_by VARCHAR(40) NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_announcement_author FOREIGN KEY (created_by)
+        REFERENCES app_users(username)
+);
+
+CREATE TABLE IF NOT EXISTS announcement_reads (
+    announcement_id INT NOT NULL,
+    username VARCHAR(40) NOT NULL,
+    read_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (announcement_id, username),
+    CONSTRAINT fk_announcement_read_announcement FOREIGN KEY (announcement_id)
+        REFERENCES announcements(id) ON DELETE CASCADE,
+    CONSTRAINT fk_announcement_read_user FOREIGN KEY (username)
+        REFERENCES app_users(username) ON DELETE CASCADE
+);
+
 -- Application startup adds missing columns to an older waste table and seeds
 -- the administrator/member accounts without replacing existing records.
