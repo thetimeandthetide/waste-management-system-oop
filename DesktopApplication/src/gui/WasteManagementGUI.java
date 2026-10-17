@@ -28,6 +28,7 @@ import java.awt.CardLayout;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Font;
+import java.awt.FlowLayout;
 import java.awt.GridLayout;
 import java.io.BufferedWriter;
 import java.io.File;
@@ -163,9 +164,20 @@ public class WasteManagementGUI extends JFrame {
                 : user.getDisplayName() + "  |  " + user.getAssignedArea();
         JLabel profile = new JLabel(identity);
         profile.setForeground(MUTED);
+        JPanel profileControls = new JPanel(new FlowLayout(FlowLayout.RIGHT, 12, 0));
+        profileControls.setOpaque(false);
+        JButton logout = button("Log out", false);
+        logout.addActionListener(event -> logout());
+        profileControls.add(profile);
+        profileControls.add(logout);
         top.add(title, BorderLayout.WEST);
-        top.add(profile, BorderLayout.EAST);
+        top.add(profileControls, BorderLayout.EAST);
         return top;
+    }
+
+    private void logout() {
+        new LoginFrame().setVisible(true);
+        dispose();
     }
 
     private JPanel createRecordsPage() {
