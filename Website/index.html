@@ -189,9 +189,9 @@
                 </article>
                 <article class="code-card">
                     <h3>Table</h3>
-                    <pre><code>app_users + waste + announcements + announcement_reads
-completion_requests</code></pre>
-                    <p>Accounts, collection records, admin broadcasts, read receipts, and member collection-approval requests are stored separately.</p>
+                    <pre><code>app_users + registration_areas + waste
+announcements + announcement_reads + completion_requests</code></pre>
+                    <p>Accounts and their profiles, assignable locations, collection records, admin broadcasts, read receipts, and member collection-approval requests are stored separately.</p>
                 </article>
             </div>
             <div class="table-card">
@@ -199,9 +199,9 @@ completion_requests</code></pre>
                     <thead><tr><th>Column</th><th>Type</th><th>Meaning</th></tr></thead>
                     <tbody>
                         <tr><td>id</td><td>INT AUTO_INCREMENT PRIMARY KEY</td><td>Unique number for every record</td></tr>
-                        <tr><td>waste_type</td><td>VARCHAR(50)</td><td>Organic, Recyclable, or Hazardous</td></tr>
+                        <tr><td>waste_type</td><td>VARCHAR(30)</td><td>Organic, Recyclable, or Hazardous</td></tr>
                         <tr><td>description</td><td>VARCHAR(255)</td><td>Short explanation of the waste</td></tr>
-                        <tr><td>quantity</td><td>DOUBLE</td><td>Amount of waste in kg</td></tr>
+                        <tr><td>quantity</td><td>DECIMAL(10,2)</td><td>Amount of waste in kg</td></tr>
                         <tr><td>location</td><td>VARCHAR(100)</td><td>Where the waste is located</td></tr>
                         <tr><td>status</td><td>VARCHAR(20)</td><td>PENDING, COMPLETED, or INVALID</td></tr>
                         <tr><td>collected_by</td><td>VARCHAR(40)</td><td>Member credited for the collection</td></tr>
@@ -210,14 +210,18 @@ completion_requests</code></pre>
                 </table>
             </div>
             <h3>Useful MySQL Commands</h3>
-            <pre><code>mysql -u root
+            <pre><code>mysql -u root -p
 SHOW DATABASES;
 USE waste_management_db;
 SHOW TABLES;
 DESCRIBE waste;
+DESCRIBE app_users;
 SELECT * FROM waste;
 SELECT * FROM waste WHERE status = 'COMPLETED';
+SELECT display_name, date_of_birth, register_number, department, assigned_area
+FROM app_users WHERE role = 'USER';
 exit;</code></pre>
+            <p>The <code>-p</code> option prompts for your MySQL password without placing it in the command. The app reads password-protected connections from <code>WASTE_DB_PASSWORD</code>; set that variable in the same terminal before launching. Keep the value private and out of Git.</p>
         </section>
 
         <section class="section" id="oop">
@@ -289,17 +293,15 @@ public String getWasteCategory() {
             <details>
                 <summary>dao/DatabaseManager.java</summary>
                 <p><strong>Purpose:</strong> Handles MySQL connection and automatic database setup.</p>
-                <pre><code>private static final String SERVER_URL = "jdbc:mysql://localhost:3306/";
-private static final String DATABASE_NAME = "waste_management_db";
-private static final String USERNAME = "root";
-private static final String PASSWORD = "";</code></pre>
-                <p><strong>Meaning:</strong> These are the database connection settings. If MySQL password changes, update PASSWORD.</p>
+                <pre><code>private static final String USERNAME = setting("WASTE_DB_USER", "root");
+private static final String PASSWORD = setting("WASTE_DB_PASSWORD", "");</code></pre>
+                <p><strong>Meaning:</strong> The app reads database credentials from environment variables, with local defaults for an unpassworded setup. Do not hard-code or commit a real MySQL password.</p>
                 <pre><code>public static Connection getConnection() throws SQLException</code></pre>
                 <p><strong>Meaning:</strong> This method returns a JDBC connection object used by other DAO methods.</p>
                 <pre><code>DriverManager.getConnection(DATABASE_URL, USERNAME, PASSWORD)</code></pre>
                 <p><strong>Meaning:</strong> DriverManager uses the MySQL connector jar to connect Java to MySQL.</p>
                 <pre><code>initializeDatabase()</code></pre>
-                <p><strong>Meaning:</strong> This method creates the database, creates the table, and inserts starter records if the table is empty.</p>
+                <p><strong>Meaning:</strong> This method creates or migrates the tables and seeds missing accounts and registration locations. It preserves existing waste records and does not insert sample waste rows.</p>
                 <pre><code>CREATE DATABASE IF NOT EXISTS
 CREATE TABLE IF NOT EXISTS</code></pre>
                 <p><strong>Meaning:</strong> These SQL commands prevent errors if the database/table already exists.</p>
@@ -411,14 +413,17 @@ USE waste_management_db;</code></pre>
             <h2>How To Run And Check Everything</h2>
             <h3>Run The App</h3>
             <pre><code>cd /path/to/WasteManagementSystem/DesktopApplication
+export WASTE_DB_USER=root
+export WASTE_DB_PASSWORD='your-local-MySQL-password'
 ./run.sh</code></pre>
+            <p>Use your own MySQL password in the terminal only; do not commit it. On Windows Command Prompt, use <code>set WASTE_DB_USER=root</code>, <code>set WASTE_DB_PASSWORD=your-local-MySQL-password</code>, then <code>run.bat</code>.</p>
             <h3>Rebuild The App</h3>
             <pre><code>cd /path/to/WasteManagementSystem/DesktopApplication
 ./build.sh</code></pre>
             <h3>Start MySQL</h3>
             <pre><code>brew services start mysql</code></pre>
             <h3>Check Database Data</h3>
-            <pre><code>mysql -u root -e "USE waste_management_db; SELECT * FROM waste;"</code></pre>
+            <pre><code>mysql -u root -p -e "USE waste_management_db; SELECT * FROM waste;"</code></pre>
             <h3>Windows Run</h3>
             <pre><code>build.bat
 run.bat</code></pre>

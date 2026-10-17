@@ -30,10 +30,21 @@ admin. New members can use Join Clean CET on the login screen; registration
 stores their date of birth, CET register number, department, and randomly
 assigned area. The admin's Member directory shows these profile details.
 Existing seeded members have no registration profile unless updated separately.
-The default MySQL settings are localhost:3306, database waste_management_db,
-username root, and an empty password. Set environment variables before launch
-to override them: WASTE_DB_SERVER, WASTE_DB_NAME, WASTE_DB_USER, WASTE_DB_PASSWORD.
-Example Windows Command Prompt: set WASTE_DB_PASSWORD=your_mysql_password
+The default connection targets localhost:3306, database waste_management_db,
+username root, and an empty password. If your MySQL root account has a password,
+set it in the environment before launching; do not put the password into source
+code or Git. Supported variables: WASTE_DB_SERVER, WASTE_DB_NAME,
+WASTE_DB_USER, WASTE_DB_PASSWORD.
+
+macOS/Linux terminal:
+  export WASTE_DB_USER=root
+  export WASTE_DB_PASSWORD='your-local-MySQL-password'
+  ./run.sh
+
+Windows Command Prompt:
+  set WASTE_DB_USER=root
+  set WASTE_DB_PASSWORD=your-local-MySQL-password
+  run.bat
 
 The default server is local to each computer. Separate teammate laptops will not
 share data unless they are configured to use the same reachable MySQL server.

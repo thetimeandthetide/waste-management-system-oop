@@ -1,0 +1,417 @@
+\documentclass[12pt,a4paper]{report}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[margin=1in]{geometry}
+\usepackage{graphicx}
+\graphicspath{{figures/}}
+\usepackage{fancyhdr}
+\usepackage{array}
+\usepackage{longtable}
+\usepackage{booktabs}
+\usepackage{enumitem}
+\usepackage{float}
+\usepackage{xcolor}
+\usepackage{listings}
+\usepackage{url}
+\usepackage[hidelinks]{hyperref}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage[nottoc]{tocbibind}
+\renewcommand{\bibname}{References}
+\renewcommand{\baselinestretch}{1.35}
+\setlength{\tabcolsep}{6pt}
+\renewcommand{\arraystretch}{1.2}
+\definecolor{codegray}{rgb}{0.45,0.45,0.45}
+\definecolor{codeback}{rgb}{0.96,0.96,0.94}
+\lstdefinestyle{projectcode}{
+  backgroundcolor=\color{codeback},
+  basicstyle=\ttfamily\footnotesize,
+  commentstyle=\color{codegray},
+  keywordstyle=\color{blue!65!black},
+  stringstyle=\color{red!55!black},
+  numbers=left,
+  numberstyle=\tiny\color{codegray},
+  numbersep=6pt,
+  breaklines=true,
+  breakatwhitespace=false,
+  keepspaces=true,
+  showstringspaces=false,
+  tabsize=4,
+  captionpos=b
+}
+\lstset{style=projectcode}
+\pagestyle{fancy}
+\fancyhf{}
+\lhead{Waste Management System}
+\rhead{PBCST304 -- OOP Project}
+\cfoot{\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+
+\begin{document}
+\thispagestyle{empty}
+\begin{center}
+\vspace*{0.4in}
+{\Large\bfseries WASTE MANAGEMENT SYSTEM}\par
+\vspace{10pt}
+{\large PROJECT REPORT}\par
+\vspace{14pt}
+\normalsize Submitted in partial fulfilment of the requirements for the completion of\par
+\vspace{5pt}
+{\large\bfseries PBCST304: OBJECT ORIENTED PROGRAMMING}\par
+\vspace{18pt}
+Submitted by\par
+\vspace{7pt}
+{\bfseries Aman Fayad}\quad (KTU ID: TVE25CS023, Roll: 12)\par
+{\bfseries Joseph Fidel K M}\quad (KTU ID: TVE25CS068, Roll: 31)\par
+{\bfseries Ayshwaria Gopakumar}\quad (KTU ID: TVE25CS041, Roll: 21)\par
+{\bfseries Nivedya Sunil}\quad (KTU ID: TVE25CS101, Roll: 51)\par
+{\bfseries Nida Rahman C}\quad (KTU ID: TVE25CS097, Roll: 47)\par
+\vspace{12pt}
+\includegraphics[scale=0.52]{image14.jpg}\par
+\vspace{10pt}
+{\large DEPARTMENT OF COMPUTER SCIENCE AND ENGINEERING}\par
+{\large COLLEGE OF ENGINEERING TRIVANDRUM}\par
+\vspace{8pt}
+{\bfseries October 2026}\par
+\vspace{12pt}
+\begin{minipage}{0.88\textwidth}
+\small\emph{Student names, KTU IDs, and roll numbers are transcribed from the supplied presentation PDF. Please verify spelling and identifiers before formal submission.}
+\end{minipage}
+\end{center}
+
+\newpage
+\pagenumbering{roman}
+\setcounter{page}{1}
+\begin{center}\LARGE\textbf{DECLARATION}\end{center}
+\vspace{18pt}
+We, the undersigned, declare that the project report entitled \textbf{``Waste Management System''}, submitted in fulfilment of the requirements for the completion of the course \textbf{PBCST304: Object Oriented Programming}, describes the work carried out by our team at the College of Engineering Trivandrum. The report records the design, implementation, and verification of a Java Swing desktop application connected to MySQL using JDBC. The student names, KTU IDs, and roll numbers below are transcribed from the supplied presentation PDF.
+
+\vspace{24pt}
+\begin{longtable}{p{0.56\textwidth}p{0.3\textwidth}}
+\textbf{Student and KTU ID} & \textbf{Signature}\endhead
+Aman Fayad (TVE25CS023, Roll 12) & \\[24pt]
+Joseph Fidel K M (TVE25CS068, Roll 31) & \\[24pt]
+Ayshwaria Gopakumar (TVE25CS041, Roll 21) & \\[24pt]
+Nivedya Sunil (TVE25CS101, Roll 51) & \\[24pt]
+Nida Rahman C (TVE25CS097, Roll 47) & \\[24pt]
+\end{longtable}
+
+\newpage
+\begin{center}\LARGE\textbf{ACKNOWLEDGEMENT}\end{center}
+\vspace{18pt}
+We express our sincere thanks to the Department of Computer Science and Engineering, College of Engineering Trivandrum, for providing the academic setting in which this project was completed. We are grateful to the faculty members who introduced the object-oriented programming concepts applied in this work. We also acknowledge Clean CET for the campus-cleanliness context that informed the project requirements. Finally, we thank our teammates for their collaboration in planning, implementation, testing, and presentation preparation.
+
+\newpage
+\begin{center}\LARGE\textbf{ABSTRACT}\end{center}
+\vspace{12pt}
+The Waste Management System is a desktop application developed as an Object Oriented Programming mini-project for PBCST304. It provides a graphical interface using Java Swing and stores collection records in MySQL through JDBC and MySQL Connector/J. The model is organized around an abstract \texttt{Waste} class and three concrete categories: organic, recyclable, and hazardous waste. The application supports authenticated member and administrator roles, timestamped record entry, administrator-approved completion requests, and date-filtered reports by category, collector, and actual collection area.
+
+Members can add records, update their own pending entries, request administrator approval to mark a collection complete, flag their own pending records as invalid, and view their individual contribution. The administrator can view all records, approve or reject requests, mark records collected directly, delete records, and access overall, member-wise, and area-wise reports. Approval updates the request and waste status in one transaction; only completed records count in reports. A member's off-territory collection is classified as bonus in their member report, while the area report follows actual location and sums recorded kilograms. Totals come from the canonical waste table, not duplicate summaries. Local MySQL installations do not synchronize automatically, and recorded kilograms are not a scientifically measured pollution index.
+
+\newpage
+\tableofcontents
+\listoffigures
+\newpage
+\pagenumbering{arabic}
+\setcounter{page}{1}
+
+\chapter{Introduction}
+\section{Project Background}
+Campus waste collection involves recording what was collected, its quantity, the collection location, the responsible member, and the time of collection. If these details are kept only in scattered notes, it becomes harder to locate a record, review its status, or summarize contributions consistently. This project addresses that bounded record-management need with a desktop application and a relational database.
+
+The application was developed in the context of Clean CET, a campus cleanliness club at the College of Engineering Trivandrum. It is intended to support a small team operating across assigned locations. The project is a software record system: it does not use sensors to detect waste, dispatch collection vehicles, optimize routes, or calculate environmental pollution from measured air, soil, or water data.
+
+\section{Project Overview}
+The system has four main layers. The Swing presentation layer accepts input and displays records. Model classes represent users, waste categories, and report rows. Manager classes validate access and perform data operations. MySQL provides persistent storage through JDBC and the bundled MySQL Connector/J driver. The main runtime sequence is shown in Figure~\ref{fig:architecture}.
+
+\begin{figure}[H]
+\centering
+\begin{tabular}{>{\centering\arraybackslash}p{0.17\textwidth}c>{\centering\arraybackslash}p{0.20\textwidth}c>{\centering\arraybackslash}p{0.20\textwidth}c>{\centering\arraybackslash}p{0.18\textwidth}}
+Swing GUI & $\longrightarrow$ & Model and managers & $\longrightarrow$ & JDBC Connector/J & $\longrightarrow$ & MySQL\\
+\small Login, forms, tables & & \small OOP entities, rules, reports & & \small Connection, prepared SQL & & \small Persistent records
+\end{tabular}
+\caption{High-level application architecture}
+\label{fig:architecture}
+\end{figure}
+
+\section{Scope}
+The implemented scope includes login, role-aware access, add/view/update/delete operations subject to role rules, search, record timestamps, invalid and completed states, date-filtered reports, category breakdowns, area/member summaries, CSV export, logout, and administrator-to-member announcements with per-member unread/read status. The user interface is a native Swing desktop application. The separate HTML/CSS/JavaScript website in the repository is a learning guide and is not part of the application's runtime.
+
+\chapter{Problem Definition}
+\section{Problem Statement}
+The project addresses the need for a consistent way to maintain campus waste-collection records and review contributions across assigned locations. A useful record must include the waste category, description, quantity, actual collection area, collector, and collection timestamp. The system must distinguish data entry from administrative review so that incomplete or incorrect records do not appear as confirmed collections. It must also ensure that members see only their own contribution while an administrator can review the organization-wide view.
+
+\section{Objectives}
+\begin{enumerate}[leftmargin=*]
+  \item Build a native Java desktop interface using Swing.
+  \item Persist waste records in MySQL and connect through JDBC.
+  \item Demonstrate classes, encapsulation, inheritance, abstraction, and polymorphism through a clear waste-category hierarchy.
+  \item Authenticate users and distinguish administrator permissions from member permissions.
+  \item Record collection time, actual location, category, and quantity in kilograms.
+  \item Support record review through pending, completed, and invalid states.
+  \item Provide individual contribution reports to members and overall, member-wise, and area-wise reports to the administrator.
+  \item Keep report totals current by aggregating the source records rather than storing duplicated summary totals.
+  \item Allow the administrator to broadcast updates and members to track unread notices.
+\end{enumerate}
+
+\section{User Roles}
+The initial account list contains one administrator and thirteen seeded members. Member names, usernames, and assigned areas are seeded during initialization. The area assignments are Aman Fayad--Civil canteen; Joseph Fidel--Mech front; Nivedya--Dhwani; Ayshwaria--Gazebo; Nida--CS front; Arya--Golden walkway; Ahban--Electrical gate; Sidharth--Indoor court; Heera--Archie corner; Keerthana--College front; Farzeen--DJ hall; Merin--CGPU hall; and Shyam--CETAA hall. Additional members can register through the login window and are assigned an unused location from the registration-area table. The report uses the spelling and assignments configured in the application.
+
+\begin{table}[H]
+\centering
+\caption{Role permission summary}
+\begin{tabular}{p{0.18\textwidth}p{0.36\textwidth}p{0.34\textwidth}}
+\toprule
+\textbf{Operation} & \textbf{Member} & \textbf{Administrator}\\
+\midrule
+View records & Records authored by or credited to the signed-in member & All records\\
+Add and update & Add as self; update own pending records & Add/assign and update pending records\\
+Mark invalid & Own pending records & Any pending record\\
+Request completion / approve & Request own pending record & Approve/reject; can mark collected directly\\
+Delete & Not permitted & Permitted, with GUI confirmation\\
+Reports & Own individual contribution & Overall, individual-member, and area-wise reports\\
+Announcements & Read notices and mark them read & Publish notices to all members\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\chapter{Methodology}
+\section{Development Approach}
+The implementation follows a small layered design suitable for a desktop OOP project. Model classes represent domain information without owning screen layout or SQL. The GUI owns interaction and presentation. The data-access layer owns SQL and database connections. This separation makes the flow easier to explain and keeps database operations out of button-rendering code.
+
+\section{Application Workflow}
+At startup, \texttt{Main} shows a status window and initializes the schema and accounts inside \texttt{SwingWorker.doInBackground()}. After success, \texttt{done()} opens \texttt{LoginFrame} on Swing's Event Dispatch Thread. The login form passes credentials to \texttt{AuthenticationManager}. On success, an \texttt{AppUser} object is passed to \texttt{WasteManagementGUI}. A member's completion request appears in the administrator approval queue; \texttt{WasteManager} approves the request and completes the waste record in one transaction. The queue count refreshes every 15 seconds. Report queries are handled by \texttt{ReportManager}; administrator broadcasts and member read receipts are handled by \texttt{AnnouncementManager}. Logout disposes the authenticated dashboard and opens a fresh login window.
+
+\section{Object-Oriented Design}
+\subsection{Abstraction and Inheritance}
+\texttt{Waste} is an abstract parent class containing common record fields, including identifier, description, quantity, location, status, record author, credited collector, collection timestamp, and invalid reason. It declares the abstract method \texttt{getWasteCategory()}. \texttt{OrganicWaste}, \texttt{RecyclableWaste}, and \texttt{HazardousWaste} extend this parent and provide the category-specific implementation.
+
+\subsection{Encapsulation and Polymorphism}
+Model fields are private and are read or changed using public getters and setters. This is the project's direct example of encapsulation. The category method is called through the common \texttt{Waste} type but returns a value based on the concrete object, demonstrating runtime polymorphism. Shared fields and behavior are implemented once in the parent class instead of repeated in each subtype.
+
+\subsection{Other OOP and Java Concepts}
+Objects are created for authenticated users, waste entries, and report rows. Packages separate \texttt{model}, \texttt{dao}, \texttt{gui}, and \texttt{main}. Exception handling catches SQL and input parsing failures and presents errors in the GUI. Swing \texttt{ActionListener}s connect button events to methods. \texttt{PreparedStatement} is used for user-provided SQL values. The application initializes Swing using \texttt{SwingUtilities.invokeLater}; Swing event handlers run on the Event Dispatch Thread and should remain short to avoid a frozen interface~\cite{oracleSwingEDT}.
+
+\section{Record State and Report Rules}
+New records begin as \texttt{PENDING}. A member or administrator may flag a pending record \texttt{INVALID}; the record remains available for administrative review and may be deleted by an administrator. Members may request completion for their own pending records. The administrator may approve/reject a request or mark a selected pending record collected directly. Approval changes request and waste status in one transaction. Reports include completed records only, so pending and invalid entries do not inflate confirmed totals. Editing or invalidating a record cancels an outstanding request.
+
+The actual location is stored on the waste record. The credited collector is stored separately from the account that entered the row. This distinction allows an administrator to enter a collection on behalf of a member. A member's assigned area is stored with the account. When actual location differs from that assigned area, the member report treats the amount as bonus contribution. Area-wise reports attribute the same physical amount to its actual location; these reports are different groupings of the same records, not additive amounts.
+
+\section{Database Design}
+The schema uses \texttt{app\_users} for accounts, \texttt{waste} for collection records, \texttt{announcements} for administrator broadcasts, \texttt{announcement\_reads} for per-user read receipts, and \texttt{completion\_requests} for member requests and administrator review outcomes. The runtime-created schema includes foreign-key relationships. Startup applies additive migrations and creates missing communication tables without dropping existing waste records.
+
+Reports are not stored as one table per user. \texttt{ReportManager} queries the canonical \texttt{waste} records with sums, counts, grouping, joins, and selected date bounds. This avoids stale summary totals when a record is updated, invalidated, completed, or deleted. JDBC's \texttt{PreparedStatement} binds runtime values and the Connector/J driver implements the JDBC connection to MySQL~\cite{oraclePrepared, mysqlConnector}.
+
+\section{Core Processing Algorithms}
+\subsection{Authentication}
+\begin{enumerate}[leftmargin=*]
+  \item Receive username and password from the login form.
+  \item Find the active account row by username using a prepared query.
+  \item Retrieve its per-account salt and PBKDF2 hash.
+  \item Hash the entered password with the saved salt and compare the result.
+  \item Return an \texttt{AppUser} only when verification succeeds; otherwise show a generic failure message.
+\end{enumerate}
+
+\subsection{Create and Review a Collection}
+\begin{enumerate}[leftmargin=*]
+  \item Validate waste category, non-empty description/location, positive finite quantity, and collection timestamp.
+  \item Create the matching concrete \texttt{Waste} object and set author and credited collector.
+  \item Insert the row as pending with a parameterized SQL statement.
+  \item An authorized reviewer can mark the entry completed or invalid; an administrator can delete it.
+  \item Refresh the record table and date-filtered report after a successful change.
+\end{enumerate}
+
+\section{Report Calculation}
+For a selected date interval $[d_1,d_2]$, the report layer selects records satisfying \texttt{status = 'COMPLETED'} and whose collection timestamp falls within the interval. The Apply Dates action refreshes the dashboard; CSV export uses the last successfully applied range. Area reports sum kilograms and count records at the actual collection location. These values describe recorded waste accumulation, not population or a scientific pollution index. For a category $c$, member $u$, and area $a$, the reported kilograms are:
+\[
+  W(c,u,a)=\sum_{r \in R(d_1,d_2)} q_r\,\mathbf{1}[type_r=c],\mathbf{1}[collector_r=u],\mathbf{1}[location_r=a],
+\]
+where $q_r$ is the entered quantity in kilograms and $\mathbf{1}$ is an indicator for a matching condition. Overall, member, and area views use different grouping fields over this same completed-record set. Member assigned/bonus classification compares actual location with the account's assigned area.
+
+\chapter{Implementation Details}
+\section{System Requirements}
+\subsection{Hardware Requirements}
+The project was developed and verified on a desktop environment. It requires a computer capable of running a supported Java runtime and MySQL Server. The template presentation does not specify numeric CPU or memory minimums, and this report does not invent them.
+
+\subsection{Software Requirements}
+\begin{itemize}[leftmargin=*]
+  \item Java Development Kit for compilation and a Java runtime for launching the JAR.
+  \item MySQL Server and a MySQL account with database/table initialization privileges.
+  \item The bundled MySQL Connector/J JAR in \texttt{DesktopApplication/lib}.
+  \item Swing and AWT from the Java platform; no web framework or JavaFX is used by the desktop application.
+  \item Windows batch scripts and macOS/Linux shell scripts for building and running.
+\end{itemize}
+
+\section{Experimental Setup}
+The verified development environment was macOS 26.6.2 (Apple silicon), Eclipse Temurin OpenJDK 21.0.5 LTS, and the local Homebrew MySQL server reported as version 26.7.0. The project was compiled with the supplied shell build script and exercised against the local database. Windows batch build/launch scripts are included, but execution on a physical Windows computer was not independently verified in this audit.
+
+\section{Project Packages and Classes}
+\begin{longtable}{p{0.31\textwidth}p{0.58\textwidth}}
+\toprule
+\textbf{Package or class} & \textbf{Responsibility}\\
+\midrule
+\endhead
+\texttt{model.Waste} & Abstract parent with common private fields and category contract.\\
+\texttt{model.OrganicWaste}, \texttt{RecyclableWaste}, \texttt{HazardousWaste} & Concrete waste categories overriding \texttt{getWasteCategory()}.\\
+\texttt{model.AppUser} & Authenticated identity, role, assigned area, DOB, register number, and department.\\
+\texttt{model.RegistrationResult} & Newly registered member plus one-time display of the generated password.\\
+\texttt{model.ReportSummary}, \texttt{ReportRow} & Typed containers for aggregate totals and member/area report rows.\\
+\texttt{dao.DatabaseManager} & JDBC settings, schema creation/migration, account seeding, connection factory.\\
+\texttt{dao.PasswordHasher} & Salted PBKDF2 hashing and verification.\\
+\texttt{dao.AuthenticationManager} & Account lookup and credential verification.\\
+\texttt{dao.UserManager} & Registration validation, random area assignment, and admin-only member search/area management.\\
+\texttt{dao.WasteManager} & CRUD queries, state changes, and role/ownership checks for records.\\
+\texttt{dao.ReportManager} & Date-filtered aggregate queries for overall, member, area, and personal reports.\\
+\texttt{dao.AnnouncementManager} & Admin-only publishing, inbox queries, unread counts, and read receipts.\\
+\texttt{model.Announcement} & Immutable announcement data shown in the inbox.\\
+\texttt{gui.LoginFrame} & Swing login/registration window and sign-in event handling.\\
+\texttt{gui.CleanButtonUI} & Shared button painter for consistent fill and readable interaction states.\\
+\texttt{gui.WasteManagementGUI} & Main desktop dashboard, record forms/tables, reports, chart, and logout.\\
+\texttt{main.Main} & Application entry point and startup error handling.\\
+\bottomrule
+\end{longtable}
+
+\section{Database Fields}
+\begin{longtable}{p{0.21\textwidth}p{0.23\textwidth}p{0.45\textwidth}}
+\toprule
+\textbf{Table} & \textbf{Field} & \textbf{Purpose}\\
+\midrule
+\endhead
+\texttt{app\_users} & username & Unique login identifier.\\
+ & display\_name, role & Human-readable name and authorization role.\\
+ & assigned\_area & Member's normal collection territory.\\
+ & date\_of\_birth, register\_number, department & Registration profile; register number is unique.\\
+ & password\_salt, password\_hash & Per-account salt and derived password hash; no plaintext password column.\\
+ & active & Allows an account to be disabled.\\
+\texttt{waste} & id & Auto-increment primary key.\\
+ & waste\_type & Organic, Recyclable, or Hazardous.\\
+ & description, quantity & Record description and weight in kilograms.\\
+ & location & Actual collection location.\\
+ & status & PENDING, COMPLETED, or INVALID.\\
+ & created\_by, collected\_by & Account that entered the row and member credited for collection.\\
+ & collected\_at & User-entered date and time of collection.\\
+ & invalid\_reason & Optional explanation associated with an invalid record.\\
+ & created\_at, updated\_at & Database-managed record creation and update timestamps.\\
+\texttt{announcements} & title, message, created\_by, created\_at & Administrator broadcast messages.\\
+\texttt{announcement\_reads} & announcement\_id, username, read\_at & Per-member read receipts and unread counts.\\
+\texttt{registration\_areas} & area\_name, assigned\_username & Available random-assignment areas, maintained by admin.\\
+\bottomrule
+\end{longtable}
+
+\section{Database Configuration and Startup}
+The default JDBC target is a local MySQL server at \texttt{localhost:3306}, database \texttt{waste\_management\_db}. Database server, database name, username, and password may be supplied using \texttt{WASTE\_DB\_SERVER}, \texttt{WASTE\_DB\_NAME}, \texttt{WASTE\_DB\_USER}, and \texttt{WASTE\_DB\_PASSWORD}, or corresponding Java system properties. On a fresh database, \texttt{WASTE\_ADMIN\_INITIAL\_PASSWORD} is read once to seed the administrator's salted hash. It should be set privately and not committed to source control.
+
+Each computer using the default local server has its own database. Multiple users on different laptops do not share data automatically; a shared team deployment requires a common reachable MySQL host and securely configured network/database permissions. The desktop client is not a hosted multi-user server.
+
+\section{Build and Run}
+On Windows, open a command prompt in \texttt{DesktopApplication}, run \texttt{build.bat}, then \texttt{run.bat}. On macOS/Linux, run \texttt{./build.sh} followed by \texttt{./run.sh}. The build compiles Java source against \texttt{lib/mysql-connector-j.jar} and packages a runnable JAR under \texttt{dist}. The JAR still requires a running MySQL service and a compatible Java runtime.
+
+\section{Security and Operational Considerations}
+Passwords are stored as salted PBKDF2 hashes and verified through the authentication manager. Join Clean CET collects full name, date of birth, CET register number, and department; the lowercase first name becomes the username. A new account receives an unused area randomly selected from registration_areas, in the same database transaction as account creation. The requested username_clean password is shown once after registration; it is predictable and unsuitable for production. Register numbers are checked for format and uniqueness, but not against an official CET registry. DOB and register numbers are personal data and should only be collected with informed consent. Role restrictions are enforced in the Swing application and DAO layer. A user with direct access to shared database credentials could bypass client-side checks, so production deployment would place authorization behind a trusted service, use protected credentials, and add account recovery and audit processes.
+
+The fifteen initial registration locations are Industrial department front, EC department front, Rohith square, Sargam stage, Library front, Ohm's villa, Industrial base, College ground, Research block, Old EC department, Hydraulics lab front, Back gate, Mh front, Lh front, and Flag post. Each is assigned to at most one new member until the administrator adds further locations.
+
+\chapter{Results}
+\section{Verification Performed}
+The project was compiled using the supplied build script. A JDBC connection using environment-configured local MySQL credentials was verified; secrets are not included in this report. MySQL integration checks confirmed the initial thirteen USER accounts and one ADMIN account remain intact; a temporary registration test verified first-name username creation, profile persistence, random assignment to an unused area, successful authentication, duplicate-register rejection, and admin-only member search. The temporary account was removed after testing. Other checks covered member visibility, update, admin-only completion/deletion, invalid state, and report aggregation. Completion-flow checks verified pending requests, unauthorized-approval denial, rejection/resubmission, stale-request cancellation on editing, atomic approval, date filtering, and direct administrator completion. Existing user profile fields not supplied remain blank and display as not provided.
+
+\section{Functional Test Cases}
+\begin{longtable}{p{0.09\textwidth}p{0.30\textwidth}p{0.49\textwidth}}
+\caption{Representative functional tests}\\
+\toprule
+\textbf{ID} & \textbf{Test} & \textbf{Expected result}\\
+\midrule
+\endfirsthead
+\toprule
+\textbf{ID} & \textbf{Test} & \textbf{Expected result}\\
+\midrule
+\endhead
+T1 & Valid member login & Correct member identity and assigned area are loaded.\\
+T2 & Incorrect password & Authentication is rejected without opening the workspace.\\
+T3 & Member attempts admin completion/deletion & Operation is denied; only the administrator can perform these actions.\\
+T4 & Add timestamped record & Valid category, positive kg value, area, and timestamp are stored as pending.\\
+T5 & Member flags own pending record invalid & Status changes to INVALID and it is excluded from completed reports.\\
+T6 & Member requests completion & Record remains PENDING and appears in the admin approval queue.\\
+T7 & Admin rejects and member retries & Record remains pending; a new request is accepted.\\
+T8 & Admin approves a completion request & Request and record update atomically; completed reports include the record.\\
+T9 & Member collects outside assigned area & Personal report classifies it as bonus; area report uses the actual location.\\
+T10 & Apply report date range & Dashboard aggregates completed records within the applied collection-date interval.\\
+T11 & Export CSV after applying dates & CSV uses the last successfully applied range.\\
+T12 & Admin marks a pending record collected directly & Record status changes to COMPLETED and report totals include it.\\
+T13 & Logout then sign in as another role & Login returns and permissions follow the new authenticated identity.\\
+T14 & Administrator publishes a notice & Member sees it as unread, opening marks it read, member publishing is denied.\\
+T15 & Register with a valid unique profile & Account is saved with lowercase first-name username, hashed password, random available area, and can sign in.\\
+T16 & Duplicate register number or member-directory access as a member & Duplicate signup is rejected and non-admin directory access is denied.\\
+\bottomrule
+\end{longtable}
+
+\section{Observed Results}
+The administrator dashboard produces overall, member-wise, and area-wise category totals with applied-date filtering, a Swing chart, and CSV export. Administrators can approve member requests in a queue whose count refreshes every 15 seconds or mark records collected directly. Members see only their own progress. Completed-only reporting separates reviewed collections from pending and invalid input. Area totals are recorded kilograms and counts, not population or direct observations of pollution reduction.
+
+\chapter{Conclusion and Future Works}
+\section{Conclusion}
+The project implements a role-based campus waste register as a Java Swing desktop application with MySQL persistence through JDBC. Its design demonstrates the requested OOP hierarchy and concepts, separates interface/model/data responsibilities, and adds operational behaviors around authentication, timestamps, review states, and reporting. SQL aggregation over a single source-of-truth record table keeps member, area, and overall totals consistent as records change.
+
+\section{Limitations}
+The default setup is local-only, so separate installations do not synchronize unless configured to use the same reachable MySQL host. Announcements are administrator-to-member broadcasts, not two-way chat; completion queue counts poll every 15 seconds rather than using push. Reports summarize recorded kilograms by category and location; they do not calculate a validated pollution score. The requested initial member password convention is predictable. Application-layer authorization is not a security boundary against direct access to the database account. JDBC calls are made directly by a desktop client, which can block the Swing event thread if a database is slow. The report does not claim formal usability, performance, or environmental-impact measurements.
+
+\section{Future Enhancements}
+Future work could introduce a secured central service and common hosted database for team-wide access, two-way messaging and real-time push notifications, account password reset and first-login password changes, audit logs, database backups, and asynchronous database operations using SwingWorker. Additional verified environmental measurements could support a carefully defined pollution indicator. Further improvements could include PDF report export, configurable date/time handling, and formal usability and performance testing.
+
+\bibliographystyle{unsrt}
+\bibliography{bibli}
+
+\appendix
+\chapter{Database Setup and Inspection}
+The application creates or migrates its tables on startup. The following SQL commands can be used to inspect the resulting database without deleting existing information.
+\begin{lstlisting}[language=SQL,caption={MySQL inspection commands}]
+USE waste_management_db;
+SHOW TABLES;
+DESCRIBE app_users;
+DESCRIBE waste;
+DESCRIBE announcements;
+DESCRIBE announcement_reads;
+DESCRIBE completion_requests;
+SELECT username, display_name, role, assigned_area FROM app_users;
+SELECT id, waste_type, quantity, location, status, collected_at, collected_by
+FROM waste ORDER BY collected_at DESC;
+SELECT waste_type, SUM(quantity) AS kilograms
+FROM waste
+WHERE status = 'COMPLETED'
+GROUP BY waste_type;
+\end{lstlisting}
+
+\chapter{Source Code Listing}
+The full Java implementation is maintained in the accompanying \texttt{DesktopApplication/src} directory. The listings below are included directly from that source tree so this report remains synchronized with the project version from which it was compiled.
+
+\section{Application Entry Point}
+\lstinputlisting[language=Java,caption={Main.java}]{../DesktopApplication/src/main/Main.java}
+
+\section{Waste Model Hierarchy}
+\lstinputlisting[language=Java,caption={Waste.java}]{../DesktopApplication/src/model/Waste.java}
+\lstinputlisting[language=Java,caption={OrganicWaste.java}]{../DesktopApplication/src/model/OrganicWaste.java}
+\lstinputlisting[language=Java,caption={RecyclableWaste.java}]{../DesktopApplication/src/model/RecyclableWaste.java}
+\lstinputlisting[language=Java,caption={HazardousWaste.java}]{../DesktopApplication/src/model/HazardousWaste.java}
+\lstinputlisting[language=Java,caption={AppUser.java}]{../DesktopApplication/src/model/AppUser.java}
+\lstinputlisting[language=Java,caption={RegistrationResult.java}]{../DesktopApplication/src/model/RegistrationResult.java}
+\lstinputlisting[language=Java,caption={ReportSummary.java}]{../DesktopApplication/src/model/ReportSummary.java}
+\lstinputlisting[language=Java,caption={ReportRow.java}]{../DesktopApplication/src/model/ReportRow.java}
+
+\section{Database and Authentication}
+\lstinputlisting[language=Java,caption={DatabaseManager.java}]{../DesktopApplication/src/dao/DatabaseManager.java}
+\lstinputlisting[language=Java,caption={PasswordHasher.java}]{../DesktopApplication/src/dao/PasswordHasher.java}
+\lstinputlisting[language=Java,caption={AuthenticationManager.java}]{../DesktopApplication/src/dao/AuthenticationManager.java}
+\lstinputlisting[language=Java,caption={UserManager.java}]{../DesktopApplication/src/dao/UserManager.java}
+
+\section{Record and Report Managers}
+\lstinputlisting[language=Java,caption={WasteManager.java}]{../DesktopApplication/src/dao/WasteManager.java}
+\lstinputlisting[language=Java,caption={ReportManager.java}]{../DesktopApplication/src/dao/ReportManager.java}
+\lstinputlisting[language=Java,caption={AnnouncementManager.java}]{../DesktopApplication/src/dao/AnnouncementManager.java}
+\lstinputlisting[language=Java,caption={Announcement.java}]{../DesktopApplication/src/model/Announcement.java}
+
+\section{Swing Interface}
+\lstinputlisting[language=Java,caption={LoginFrame.java}]{../DesktopApplication/src/gui/LoginFrame.java}
+\lstinputlisting[language=Java,caption={CleanButtonUI.java}]{../DesktopApplication/src/gui/CleanButtonUI.java}
+\lstinputlisting[language=Java,caption={WasteManagementGUI.java}]{../DesktopApplication/src/gui/WasteManagementGUI.java}
+
+\end{document}

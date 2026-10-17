@@ -224,7 +224,7 @@ FROM waste ORDER BY collected_at DESC;</code></pre>
                     <div><code>SERVER_URL = "jdbc:mysql://localhost:3306/";</code></div><p>Base address of MySQL running on your computer.</p>
                     <div><code>DATABASE_NAME = "waste_management_db";</code></div><p>Name of the database used by the project.</p>
                     <div><code>DATABASE_URL = SERVER_URL + DATABASE_NAME;</code></div><p>Full JDBC URL used after the database exists.</p>
-                    <div><code>USERNAME = "root"; PASSWORD = "";</code></div><p>MySQL login details. Empty password means no password is set for root locally.</p>
+                    <div><code>setting("WASTE_DB_USER", "root")</code> / <code>setting("WASTE_DB_PASSWORD", "")</code></div><p>Connection values are read from environment variables. The blank fallback only works when the local MySQL account has no password; for a password-protected server set <code>WASTE_DB_PASSWORD</code> before starting the app. Never commit a real password.</p>
                     <div><code>getConnection()</code></div><p>Returns a reusable connection to the project database.</p>
                     <div><code>DriverManager.getConnection(...)</code></div><p>Actually opens the MySQL connection using the Connector/J driver.</p>
                     <div><code>initializeDatabase()</code></div><p>Runs startup setup: create/migrate tables and seed missing accounts plus the available registration areas. It does not inject sample waste rows.</p>
@@ -443,18 +443,21 @@ FROM waste ORDER BY collected_at DESC;</code></pre>
         <section class="section" id="mysql">
             <h2>How To Check MySQL Database And Data</h2>
             <h3>Open MySQL Terminal</h3>
-            <pre><code>mysql -u root</code></pre>
+            <pre><code>mysql -u root -p</code></pre>
             <h3>Commands Inside MySQL</h3>
             <pre><code>SHOW DATABASES;
 USE waste_management_db;
 SHOW TABLES;
 DESCRIBE waste;
+DESCRIBE app_users;
 SELECT * FROM waste;
 SELECT * FROM waste WHERE status = 'COMPLETED';
 SELECT * FROM waste WHERE waste_type = 'Organic';
+SELECT display_name, date_of_birth, register_number, department, assigned_area
+FROM app_users WHERE role = 'USER';
 exit;</code></pre>
             <h3>One-Line Terminal Check</h3>
-            <pre><code>mysql -u root -e "USE waste_management_db; SELECT * FROM waste;"</code></pre>
+            <pre><code>mysql -u root -p -e "USE waste_management_db; SELECT * FROM waste;"</code></pre>
             <p>Use this to prove during viva that the GUI data is actually stored in MySQL.</p>
         </section>
     </main>
